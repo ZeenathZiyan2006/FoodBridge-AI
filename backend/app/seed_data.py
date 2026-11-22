@@ -695,3 +695,34 @@ def seed_initial_data(db: Session):
 
     db.commit()
     print("Database seeding completed successfully!")
+
+
+def ensure_fresh_demo_data(db: Session):
+    """Refreshes available donation deadlines so demo food is always fresh and edible for exhibitions."""
+    try:
+        now = datetime.datetime.utcnow()
+        avail_dons = db.query(FoodDonation).filter(FoodDonation.status == "Available").all()
+        for d in avail_dons:
+            # If remaining time is less than 1.5 hours or expired, refresh deadline
+            diff = (d.consumption_deadline - now).total_seconds() / 3600.0
+            if diff < 1.5:
+                d.preparation_date = now - datetime.timedelta(hours=1)
+                if "Biryani" in d.food_name:
+                    d.consumption_deadline = now + datetime.timedelta(hours=4.5)
+                elif "Pulao" in d.food_name:
+                    d.consumption_deadline = now + datetime.timedelta(hours=2.5)
+                elif "Fried Rice" in d.food_name:
+                    d.consumption_deadline = now + datetime.timedelta(hours=5.0)
+                elif "Millet" in d.food_name or "Upma" in d.food_name:
+                    d.consumption_deadline = now + datetime.timedelta(hours=6.0)
+                elif "Sourdough" in d.food_name or "Bakery" in d.category:
+                    d.consumption_deadline = now + datetime.timedelta(hours=18.0)
+                elif "Vegetables" in d.category or "Fruits" in d.category:
+                    d.consumption_deadline = now + datetime.timedelta(hours=28.0)
+                else:
+                    d.consumption_deadline = now + datetime.timedelta(hours=8.0)
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        print(f"Notice in ensure_fresh_demo_data: {e}")
+

@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager
 
 from .database import engine, Base, SessionLocal
 from .config import CORS_ORIGINS
-from .seed_data import seed_initial_data
+from .seed_data import seed_initial_data, ensure_fresh_demo_data
 from .routes import auth, donations, requests, matching, analytics, notifications
 
 @asynccontextmanager
@@ -12,10 +12,11 @@ async def lifespan(app: FastAPI):
     # 1. Initialize SQLite Database Tables
     Base.metadata.create_all(bind=engine)
     
-    # 2. Seed initial realistic demo data if needed
+    # 2. Seed initial realistic demo data if needed & ensure deadlines are fresh
     db = SessionLocal()
     try:
         seed_initial_data(db)
+        ensure_fresh_demo_data(db)
     finally:
         db.close()
         

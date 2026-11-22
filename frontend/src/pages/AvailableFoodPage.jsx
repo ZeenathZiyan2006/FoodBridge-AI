@@ -24,8 +24,19 @@ export const AvailableFoodPage = () => {
         location,
         search: searchTerm,
         urgency,
+        status: 'Available',
+        only_available: true,
       });
-      setDonations(data);
+
+      // Strict safety & availability enforcement:
+      // Only display food that is currently 'Available' AND unexpired (hours_left > 0)
+      const freshAndEdible = (data || []).filter((d) => {
+        const isAvail = d.status?.toLowerCase() === 'available';
+        const hasTime = (d.hours_left !== undefined && d.hours_left !== null) ? d.hours_left > 0 : true;
+        return isAvail && hasTime;
+      });
+
+      setDonations(freshAndEdible);
     } catch (err) {
       console.error(err);
     } finally {
@@ -43,18 +54,35 @@ export const AvailableFoodPage = () => {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
       {/* Header */}
-      <div>
-        <span className="text-xs font-bold text-[#14532D] uppercase tracking-wider bg-[#ECFDF5] px-3 py-1 rounded-full border border-[#16A34A]/20">
-          Surplus Inventory Feed
-        </span>
-        <h1 className="font-heading text-2xl sm:text-3xl font-extrabold text-[#1F2937] tracking-tight mt-2">
-          Available Surplus Food Listings
-        </h1>
-        <p className="text-xs sm:text-sm text-gray-500 mt-1">
-          Real-time inventory of edible surplus food from college canteens, restaurants, and catering halls ready for collection.
-        </p>
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div>
+          <span className="text-xs font-bold text-[#064E3B] uppercase tracking-wider bg-[#ECFDF5] px-3 py-1 rounded-full border border-emerald-500/20 shadow-2xs">
+            🟢 Active Surplus Feed
+          </span>
+          <h1 className="font-heading text-2xl sm:text-3xl lg:text-4xl font-extrabold text-[#0F172A] tracking-tight mt-2">
+            Available Surplus Food Listings
+          </h1>
+          <p className="text-xs sm:text-sm text-slate-500 mt-1">
+            Real-time catalog of edible, unreserved food donations from college canteens, restaurants, and catering halls ready for collection.
+          </p>
+        </div>
+
+        {/* Live Filter Counter Pill */}
+        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-2xl bg-white border border-emerald-500/30 shadow-xs self-start md:self-auto">
+          <span className="relative flex h-2 w-2">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+          </span>
+          <span className="text-xs font-heading font-extrabold text-[#064E3B]">
+            {donations.length} Active & Edible
+          </span>
+          <span className="text-slate-300">|</span>
+          <span className="text-[11px] font-medium text-slate-500">
+            0% Waste Guaranteed
+          </span>
+        </div>
       </div>
 
       <SafetyBanner />

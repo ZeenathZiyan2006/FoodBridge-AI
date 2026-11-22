@@ -41,10 +41,14 @@ export const DashboardSidePanel = () => {
     try {
       const [sum, donList] = await Promise.all([
         api.getSummary().catch(() => null),
-        api.getDonations({ limit: 6 }).catch(() => []),
+        api.getDonations({ limit: 8, status: 'Available', only_available: true }).catch(() => []),
       ]);
       setSummary(sum);
-      setDonations(donList);
+      // Only keep strictly fresh, unexpired available food in side panel feed
+      const activeUnexpired = (donList || []).filter(
+        (d) => d.status === 'Available' && d.hours_left > 0
+      );
+      setDonations(activeUnexpired.slice(0, 6));
 
       if (user?.role === 'receiver') {
         const [reqs, feed] = await Promise.all([
@@ -161,55 +165,85 @@ export const DashboardSidePanel = () => {
           </div>
         </div>
 
-        {/* 1-Click Evaluator Persona Switcher */}
-        <div className="p-3.5 bg-slate-50/90 border-b border-slate-100">
-          <div className="flex items-center justify-between mb-2">
+        {/* Active Authenticated Identity & RBAC Status */}
+        <div className="p-3.5 bg-slate-50/90 border-b border-slate-100 space-y-2">
+          <div className="flex items-center justify-between">
             <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1">
-              <Sparkles className="w-3 h-3 text-[#F59E0B]" />
-              <span>1-Click Evaluator Switcher</span>
+              <Shield className="w-3 h-3 text-[#059669]" />
+              <span>RBAC Security Status</span>
             </span>
-            <span className="text-[10px] text-slate-400 font-mono">Live Session</span>
+            <span className={`text-[10px] px-2 py-0.5 rounded-full font-mono font-bold uppercase ${
+              user ? 'bg-emerald-100 text-[#064E3B] border border-emerald-300' : 'bg-slate-200 text-slate-600'
+            }`}>
+              {user ? `🔒 ${user.role} Locked` : 'Guest Session'}
+            </span>
           </div>
 
-          <div className="grid grid-cols-3 gap-1.5">
-            <button
-              type="button"
-              onClick={() => handleRoleSwitch('donor')}
-              className={`py-1.5 px-2 rounded-lg text-xs font-heading font-bold text-center border transition-all flex items-center justify-center gap-1 cursor-pointer active:scale-95 ${
-                user?.role === 'donor'
-                  ? 'bg-[#064E3B] text-white border-[#064E3B] shadow-xs'
-                  : 'bg-white text-slate-700 border-slate-200 hover:bg-emerald-50 hover:text-emerald-900'
-              }`}
-            >
-              <Utensils className="w-3 h-3 text-emerald-400" />
-              <span>Donor</span>
-            </button>
+          <div className="flex items-center justify-between text-xs">
+            <div className="truncate pr-2">
+              <p className="font-heading font-extrabold text-slate-900 truncate">
+                {user ? user.full_name : 'No Authenticated Account'}
+              </p>
+              <p className="text-[11px] font-mono text-slate-500 truncate">
+                {user ? user.email : 'Sign in to access authorized dashboard'}
+              </p>
+            </div>
+            {user && (
+              <span className="text-[10px] text-emerald-800 font-bold bg-white px-2 py-1 rounded-lg border border-slate-200 shrink-0">
+                Authorized
+              </span>
+            )}
+          </div>
 
-            <button
-              type="button"
-              onClick={() => handleRoleSwitch('receiver')}
-              className={`py-1.5 px-2 rounded-lg text-xs font-heading font-bold text-center border transition-all flex items-center justify-center gap-1 cursor-pointer active:scale-95 ${
-                user?.role === 'receiver'
-                  ? 'bg-[#064E3B] text-white border-[#064E3B] shadow-xs'
-                  : 'bg-white text-slate-700 border-slate-200 hover:bg-emerald-50 hover:text-emerald-900'
-              }`}
-            >
-              <HeartHandshake className="w-3 h-3 text-teal-400" />
-              <span>Receiver</span>
-            </button>
+          {/* Evaluator Demo Switcher (with clear role indicator) */}
+          <div className="pt-1.5 border-t border-slate-200/60">
+            <p className="text-[10px] font-mono font-bold text-slate-500 mb-1.5 flex items-center gap-1">
+              <Sparkles className="w-2.5 h-2.5 text-[#F59E0B]" />
+              <span>Evaluator Demo Accounts (Switches to role-specific account):</span>
+            </p>
+            <div className="grid grid-cols-3 gap-1.5">
+              <button
+                type="button"
+                onClick={() => handleRoleSwitch('donor')}
+                className={`py-1.5 px-2 rounded-lg text-[11px] font-heading font-bold text-center border transition-all flex items-center justify-center gap-1 cursor-pointer active:scale-95 ${
+                  user?.role === 'donor'
+                    ? 'bg-[#064E3B] text-white border-[#064E3B] shadow-xs'
+                    : 'bg-white text-slate-700 border-slate-200 hover:bg-emerald-50 hover:text-emerald-900'
+                }`}
+                title="Sign in as Food Donor (MIT Canteen)"
+              >
+                <Utensils className="w-3 h-3 text-emerald-400" />
+                <span>Donor</span>
+              </button>
 
-            <button
-              type="button"
-              onClick={() => handleRoleSwitch('admin')}
-              className={`py-1.5 px-2 rounded-lg text-xs font-heading font-bold text-center border transition-all flex items-center justify-center gap-1 cursor-pointer active:scale-95 ${
-                user?.role === 'admin'
-                  ? 'bg-purple-800 text-white border-purple-800 shadow-xs'
-                  : 'bg-white text-slate-700 border-slate-200 hover:bg-purple-50 hover:text-purple-900'
-              }`}
-            >
-              <Shield className="w-3 h-3 text-purple-400" />
-              <span>Admin</span>
-            </button>
+              <button
+                type="button"
+                onClick={() => handleRoleSwitch('receiver')}
+                className={`py-1.5 px-2 rounded-lg text-[11px] font-heading font-bold text-center border transition-all flex items-center justify-center gap-1 cursor-pointer active:scale-95 ${
+                  user?.role === 'receiver'
+                    ? 'bg-[#064E3B] text-white border-[#064E3B] shadow-xs'
+                    : 'bg-white text-slate-700 border-slate-200 hover:bg-emerald-50 hover:text-emerald-900'
+                }`}
+                title="Sign in as Receiver (Hope Orphanage)"
+              >
+                <HeartHandshake className="w-3 h-3 text-teal-400" />
+                <span>Receiver</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleRoleSwitch('admin')}
+                className={`py-1.5 px-2 rounded-lg text-[11px] font-heading font-bold text-center border transition-all flex items-center justify-center gap-1 cursor-pointer active:scale-95 ${
+                  user?.role === 'admin'
+                    ? 'bg-purple-800 text-white border-purple-800 shadow-xs'
+                    : 'bg-white text-slate-700 border-slate-200 hover:bg-purple-50 hover:text-purple-900'
+                }`}
+                title="Sign in as Administrator"
+              >
+                <Shield className="w-3 h-3 text-purple-400" />
+                <span>Admin</span>
+              </button>
+            </div>
           </div>
         </div>
 

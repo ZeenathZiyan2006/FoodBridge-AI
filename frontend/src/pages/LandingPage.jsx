@@ -26,7 +26,7 @@ import { FoodCard } from '../components/FoodCard';
 import { SafetyBanner } from '../components/SafetyBanner';
 
 export const LandingPage = () => {
-  const { user, quickLogin } = useAuth();
+  const { user, showToast } = useAuth();
   const navigate = useNavigate();
 
   const [stats, setStats] = useState({
@@ -47,10 +47,16 @@ export const LandingPage = () => {
       try {
         const [summaryData, donationsData] = await Promise.all([
           api.getSummary().catch(() => null),
-          api.getDonations({ limit: 4 }).catch(() => []),
+          api.getDonations({ limit: 8, status: 'Available', only_available: true }).catch(() => []),
         ]);
         if (summaryData) setStats(summaryData);
-        if (donationsData) setFeaturedDonations(donationsData.slice(0, 4));
+        if (donationsData) {
+          // Strictly show only available and unexpired food in featured cards
+          const activeOnly = donationsData.filter(
+            (d) => d.status === 'Available' && d.hours_left > 0
+          );
+          setFeaturedDonations(activeOnly.slice(0, 4));
+        }
       } catch (err) {
         console.error('Landing load error', err);
       } finally {
@@ -60,12 +66,17 @@ export const LandingPage = () => {
     loadLandingData();
   }, []);
 
-  const handleRoleAction = (role, path) => {
-    if (user) {
-      navigate(path);
-    } else {
-      quickLogin(role).then(() => navigate(path));
+  const handleRoleAction = (requiredRole, path) => {
+    if (!user) {
+      showToast(`Please sign in with your ${requiredRole === 'donor' ? 'Food Donor' : 'Receiver'} account to continue.`, 'info');
+      navigate('/login');
+      return;
     }
+    if (user.role !== requiredRole && user.role !== 'admin') {
+      showToast(`Access Restricted: Signed in as ${user.role.toUpperCase()}. You need a ${requiredRole.toUpperCase()} account to access this tool.`, 'error');
+      return;
+    }
+    navigate(path);
   };
 
   return (

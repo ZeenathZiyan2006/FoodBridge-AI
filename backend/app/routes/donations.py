@@ -50,6 +50,7 @@ def list_donations(
     status_filter: Optional[str] = Query(None, alias="status"),
     search: Optional[str] = None,
     urgency: Optional[str] = None,
+    only_available: bool = Query(False),
     limit: int = 50,
     db: Session = Depends(get_db)
 ):
@@ -57,6 +58,8 @@ def list_donations(
 
     if status_filter:
         query = query.filter(FoodDonation.status == status_filter)
+    elif only_available:
+        query = query.filter(FoodDonation.status == "Available")
     
     if category and category != "All":
         query = query.filter(FoodDonation.category == category)
@@ -83,6 +86,13 @@ def list_donations(
     results = []
     for d in donations:
         enriched = enrich_donation_out(d)
+
+        # Strict safety check: If filtering for available food or only_available is set,
+        # exclude any donation that is not strictly Available or whose consumption deadline passed (expired)
+        if only_available or status_filter == "Available":
+            if enriched.status != "Available" or enriched.hours_left <= 0:
+                continue
+
         if urgency and urgency != "All":
             if urgency.lower() == "urgent" and enriched.urgency_level not in ["Critical", "Urgent"]:
                 continue

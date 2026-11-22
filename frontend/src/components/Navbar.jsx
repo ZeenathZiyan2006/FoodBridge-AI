@@ -150,39 +150,50 @@ export const Navbar = () => {
               </button>
 
               {demoDropdownOpen && (
-                <div className="absolute right-0 mt-2 w-64 bg-white rounded-2xl shadow-xl border border-gray-100 p-2 z-50 animate-fade-in text-xs">
-                  <div className="px-3 py-2 border-b border-gray-100 font-semibold text-gray-400 uppercase tracking-wider text-[10px]">
-                    1-Click Evaluation Switcher
+                <div className="absolute right-0 mt-2 w-72 bg-white rounded-2xl shadow-xl border border-gray-100 p-2.5 z-50 animate-fade-in text-xs space-y-1">
+                  <div className="px-3 py-1.5 border-b border-gray-100 font-semibold text-gray-400 uppercase tracking-wider text-[10px]">
+                    Evaluator Demo Accounts
                   </div>
                   <button
                     onClick={() => handleQuickSwitch('donor')}
-                    className="w-full text-left px-3 py-2 rounded-xl hover:bg-[#ECFDF5] flex items-center justify-between text-gray-800 font-medium transition cursor-pointer"
+                    className="w-full text-left p-2.5 rounded-xl hover:bg-[#ECFDF5] flex flex-col gap-0.5 text-gray-800 transition cursor-pointer"
                   >
-                    <span className="flex items-center gap-2">
-                      <Utensils className="w-3.5 h-3.5 text-[#16A34A]" />
-                      <strong>Food Donor</strong>
-                    </span>
-                    <span className="text-[10px] bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded font-mono">MIT Canteen</span>
+                    <div className="flex items-center justify-between">
+                      <span className="flex items-center gap-1.5 font-heading font-extrabold text-xs text-[#064E3B]">
+                        <Utensils className="w-3.5 h-3.5 text-[#059669]" />
+                        <span>Food Donor Account</span>
+                      </span>
+                      <span className="text-[10px] bg-emerald-100 text-[#064E3B] px-1.5 py-0.5 rounded font-mono font-bold">MIT Canteen</span>
+                    </div>
+                    <span className="text-[11px] font-mono text-gray-500">donor.manipal@foodbridge.ai</span>
                   </button>
+
                   <button
                     onClick={() => handleQuickSwitch('receiver')}
-                    className="w-full text-left px-3 py-2 rounded-xl hover:bg-[#ECFDF5] flex items-center justify-between text-gray-800 font-medium transition cursor-pointer"
+                    className="w-full text-left p-2.5 rounded-xl hover:bg-teal-50 flex flex-col gap-0.5 text-gray-800 transition cursor-pointer"
                   >
-                    <span className="flex items-center gap-2">
-                      <HeartHandshake className="w-3.5 h-3.5 text-teal-600" />
-                      <strong>Receiver (NGO)</strong>
-                    </span>
-                    <span className="text-[10px] bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded font-mono">Hope Shelter</span>
+                    <div className="flex items-center justify-between">
+                      <span className="flex items-center gap-1.5 font-heading font-extrabold text-xs text-teal-800">
+                        <HeartHandshake className="w-3.5 h-3.5 text-teal-600" />
+                        <span>Receiver NGO Account</span>
+                      </span>
+                      <span className="text-[10px] bg-teal-100 text-teal-800 px-1.5 py-0.5 rounded font-mono font-bold">Hope Shelter</span>
+                    </div>
+                    <span className="text-[11px] font-mono text-gray-500">receiver.hope@foodbridge.ai</span>
                   </button>
+
                   <button
                     onClick={() => handleQuickSwitch('admin')}
-                    className="w-full text-left px-3 py-2 rounded-xl hover:bg-[#ECFDF5] flex items-center justify-between text-gray-800 font-medium transition cursor-pointer"
+                    className="w-full text-left p-2.5 rounded-xl hover:bg-purple-50 flex flex-col gap-0.5 text-gray-800 transition cursor-pointer"
                   >
-                    <span className="flex items-center gap-2">
-                      <Shield className="w-3.5 h-3.5 text-purple-600" />
-                      <strong>Administrator</strong>
-                    </span>
-                    <span className="text-[10px] bg-purple-50 text-purple-800 px-1.5 py-0.5 rounded font-mono">Director</span>
+                    <div className="flex items-center justify-between">
+                      <span className="flex items-center gap-1.5 font-heading font-extrabold text-xs text-purple-900">
+                        <Shield className="w-3.5 h-3.5 text-purple-600" />
+                        <span>Administrator Account</span>
+                      </span>
+                      <span className="text-[10px] bg-purple-100 text-purple-800 px-1.5 py-0.5 rounded font-mono font-bold">Director</span>
+                    </div>
+                    <span className="text-[11px] font-mono text-gray-500">admin@foodbridge.ai</span>
                   </button>
                 </div>
               )}

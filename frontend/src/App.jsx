@@ -1,11 +1,11 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, Link } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
 import { Toast } from './components/Toast';
 import { DashboardSidePanel } from './components/DashboardSidePanel';
-import { LayoutDashboard } from 'lucide-react';
+import { LayoutDashboard, ShieldAlert } from 'lucide-react';
 
 // Pages
 import { LandingPage } from './pages/LandingPage';
@@ -60,6 +60,66 @@ class ErrorBoundary extends React.Component {
   }
 }
 
+// Role Access Restriction Guard (403 Forbidden Screen)
+const RoleAccessDenied = ({ user, allowedRoles }) => {
+  const { logout } = useAuth();
+  
+  const getAuthorizedDashboard = () => {
+    if (user?.role === 'donor') return '/donor-dashboard';
+    if (user?.role === 'receiver') return '/receiver-dashboard';
+    if (user?.role === 'admin') return '/admin-dashboard';
+    return '/';
+  };
+
+  return (
+    <div className="min-h-[75vh] flex items-center justify-center p-4 sm:p-6 text-center">
+      <div className="max-w-lg w-full bg-white rounded-3xl p-8 sm:p-10 border border-rose-200 shadow-xl space-y-6 animate-fade-in">
+        <div className="w-16 h-16 rounded-2xl bg-rose-50 border border-rose-200 text-rose-600 flex items-center justify-center mx-auto shadow-inner">
+          <ShieldAlert className="w-8 h-8 text-rose-600" />
+        </div>
+
+        <div className="space-y-2">
+          <span className="px-3 py-1 rounded-full text-[11px] font-mono font-bold uppercase tracking-wider bg-rose-100 text-rose-800 border border-rose-200">
+            HTTP 403 Forbidden • Role Restricted
+          </span>
+          <h2 className="font-heading text-2xl font-extrabold text-slate-900 tracking-tight">
+            Role Permission Required
+          </h2>
+          <p className="text-xs sm:text-sm text-slate-600 leading-relaxed max-w-md mx-auto">
+            You are signed in as <strong className="text-slate-900 font-bold">{user?.full_name}</strong> with the account role <span className="uppercase font-bold text-rose-700 bg-rose-50 px-2 py-0.5 rounded border border-rose-200">{user?.role}</span> ({user?.email}).
+          </p>
+        </div>
+
+        <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 text-left text-xs text-slate-600 space-y-1.5">
+          <p className="font-bold text-slate-800 font-heading">Security Protocol Notice:</p>
+          <p>
+            This dashboard is strictly restricted to accounts registered as: <strong className="text-slate-900 uppercase">{allowedRoles?.join(', ')}</strong>.
+          </p>
+          <p className="text-[11px] text-slate-500">
+            Under FoodBridge AI's Role-Based Access Control (RBAC), a single email address cannot access unauthorized donor or receiver workflows.
+          </p>
+        </div>
+
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+          <Link
+            to={getAuthorizedDashboard()}
+            className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-[#064E3B] hover:bg-[#043327] text-white font-heading font-bold text-xs shadow-xs transition"
+          >
+            Go to My {user?.role?.toUpperCase()} Dashboard →
+          </Link>
+
+          <button
+            onClick={logout}
+            className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-slate-100 hover:bg-rose-50 hover:text-rose-700 text-slate-700 font-heading font-bold text-xs border border-slate-200 transition cursor-pointer"
+          >
+            Sign Out & Switch Account
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // Protected Route Component
 const ProtectedRoute = ({ children, allowedRoles }) => {
   const { user, loading } = useAuth();
@@ -77,7 +137,7 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
   }
 
   if (allowedRoles && !allowedRoles.includes(user.role)) {
-    return <Navigate to="/" replace />;
+    return <RoleAccessDenied user={user} allowedRoles={allowedRoles} />;
   }
 
   return children;

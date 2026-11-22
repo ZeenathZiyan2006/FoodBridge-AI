@@ -64,11 +64,16 @@ export const DonationDetailPage = () => {
 
     setSubmitting(true);
     try {
-      // If user is not logged in or is currently a donor, automatically switch to receiver demo
-      if (!user || user.role === 'donor') {
-        await quickLogin('receiver');
-        showToast("Switched to Receiver account (Hope Children's Orphanage) to submit request.", "info");
-      }
+    if (!user) {
+      showToast('Please sign in with a Food Receiver account to request this food.', 'error');
+      navigate('/login');
+      return;
+    }
+
+    if (user.role !== 'receiver' && user.role !== 'admin') {
+      showToast('Access Restricted: Food Donors cannot request food. Please sign in with an authorized Receiver account.', 'error');
+      return;
+    }
 
       await api.createRequest({
         donation_id: donation.id,
