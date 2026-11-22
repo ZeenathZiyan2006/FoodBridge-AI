@@ -9,6 +9,11 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [unreadCount, setUnreadCount] = useState(0);
   const [toast, setToast] = useState(null);
+  const [dashboardPanelOpen, setDashboardPanelOpen] = useState(false);
+
+  const toggleDashboardPanel = useCallback(() => {
+    setDashboardPanelOpen((prev) => !prev);
+  }, []);
 
   const showToast = useCallback((message, type = 'success') => {
     setToast({ message, type, id: Date.now() });
@@ -95,6 +100,9 @@ export const AuthProvider = ({ children }) => {
         loading,
         unreadCount,
         toast,
+        dashboardPanelOpen,
+        setDashboardPanelOpen,
+        toggleDashboardPanel,
         login,
         register,
         quickLogin,

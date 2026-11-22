@@ -20,7 +20,7 @@ import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
 
 export const Navbar = () => {
-  const { user, logout, quickLogin, unreadCount, fetchUnreadCount } = useAuth();
+  const { user, logout, quickLogin, unreadCount, fetchUnreadCount, toggleDashboardPanel } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -188,6 +188,21 @@ export const Navbar = () => {
               )}
             </div>
 
+            {/* Dashboard Side Panel Trigger */}
+            <button
+              type="button"
+              onClick={toggleDashboardPanel}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-emerald-500/30 bg-emerald-50/80 text-[#064E3B] text-xs font-bold hover:bg-emerald-100/90 transition shadow-2xs cursor-pointer group"
+              title="Open Dashboard Side Panel (Live Metrics & 1-Click Persona Switching)"
+            >
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+              </span>
+              <LayoutDashboard className="w-3.5 h-3.5 text-[#059669] group-hover:rotate-6 transition-transform" />
+              <span>Dashboard Panel</span>
+            </button>
+
             {/* In-app Notifications */}
             {user && (
               <div className="relative" ref={notifRef}>
@@ -338,6 +353,15 @@ export const Navbar = () => {
             )}
 
             <button
+              type="button"
+              onClick={toggleDashboardPanel}
+              className="p-1.5 rounded-xl text-[#064E3B] bg-emerald-50 hover:bg-emerald-100 border border-emerald-200/80 transition cursor-pointer"
+              title="Open Dashboard Side Panel"
+            >
+              <LayoutDashboard className="w-4.5 h-4.5 text-[#059669]" />
+            </button>
+
+            <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="p-2 rounded-xl text-gray-600 hover:text-[#14532D] hover:bg-gray-100 transition cursor-pointer"
             >
@@ -350,6 +374,22 @@ export const Navbar = () => {
       {/* Mobile Drawer */}
       {mobileMenuOpen && (
         <div className="lg:hidden border-t border-gray-100 bg-white/98 backdrop-blur-xl px-4 pt-3 pb-6 space-y-4 animate-fade-in text-sm font-medium shadow-xl">
+          {/* Dashboard Side Panel Trigger in Drawer */}
+          <button
+            type="button"
+            onClick={() => {
+              setMobileMenuOpen(false);
+              toggleDashboardPanel();
+            }}
+            className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-emerald-50 via-teal-50 to-emerald-50 border border-emerald-200/80 text-[#064E3B] font-heading font-extrabold text-xs flex items-center justify-center gap-2 shadow-2xs cursor-pointer hover:bg-emerald-100 transition"
+          >
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+            </span>
+            <LayoutDashboard className="w-4 h-4 text-[#059669]" />
+            <span>Open Dashboard Side Panel</span>
+          </button>
           {/* Active Persona Card in Drawer */}
           {user && (
             <div className="p-3.5 bg-[#F8FAF7] rounded-2xl border border-gray-200/80 flex items-center justify-between">

@@ -4,6 +4,8 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
 import { Toast } from './components/Toast';
+import { DashboardSidePanel } from './components/DashboardSidePanel';
+import { LayoutDashboard } from 'lucide-react';
 
 // Pages
 import { LandingPage } from './pages/LandingPage';
@@ -82,6 +84,8 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
 };
 
 function AppContent() {
+  const { toggleDashboardPanel } = useAuth();
+
   return (
     <ErrorBoundary>
       <div className="min-h-screen flex flex-col bg-[#F8FAF7] text-[#1F2937]">
@@ -138,6 +142,25 @@ function AppContent() {
       </main>
       <Footer />
       <Toast />
+      <DashboardSidePanel />
+
+      {/* Floating Quick Dashboard Panel Toggle */}
+      <button
+        onClick={toggleDashboardPanel}
+        type="button"
+        aria-label="Open Dashboard Side Panel"
+        className="fixed bottom-6 right-6 z-40 bg-[#064E3B] hover:bg-[#043327] text-white p-3.5 sm:px-4 sm:py-2.5 rounded-full shadow-xl hover:shadow-2xl border border-emerald-500/30 flex items-center gap-2.5 transition-all duration-300 hover:scale-105 active:scale-95 group cursor-pointer"
+        title="Open Dashboard Side Panel (Live KPIs & Role Switcher)"
+      >
+        <span className="relative flex h-2.5 w-2.5">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+          <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-400"></span>
+        </span>
+        <LayoutDashboard className="w-4.5 h-4.5 text-emerald-300 group-hover:rotate-6 transition-transform" />
+        <span className="hidden sm:inline font-heading font-bold text-xs tracking-wide">
+          Dashboard Panel
+        </span>
+      </button>
     </div>
   </ErrorBoundary>
   );
