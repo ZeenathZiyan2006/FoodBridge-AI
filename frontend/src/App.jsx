@@ -19,6 +19,45 @@ import { AdminDashboard } from './pages/AdminDashboard';
 import { HotspotsPage } from './pages/HotspotsPage';
 import { ImpactPage } from './pages/ImpactPage';
 
+// Error Boundary to prevent blank page crashes
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+  componentDidCatch(error, errorInfo) {
+    console.error('App Error caught by boundary:', error, errorInfo);
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center space-y-4 bg-[#F8FAF7]">
+          <div className="w-14 h-14 rounded-2xl bg-[#ECFDF5] text-[#14532D] flex items-center justify-center border border-[#16A34A]/20 text-2xl">
+            🌱
+          </div>
+          <h2 className="text-xl font-bold font-heading text-gray-900">FoodBridge AI Notice</h2>
+          <p className="text-xs text-gray-500 max-w-md">
+            {this.state.error?.message || "An unexpected issue occurred while rendering. Click below to return home."}
+          </p>
+          <button
+            onClick={() => {
+              this.setState({ hasError: false, error: null });
+              window.location.href = '/';
+            }}
+            className="px-5 py-2.5 rounded-xl bg-[#14532D] hover:bg-[#0f3d21] text-white font-heading font-bold text-xs shadow-xs cursor-pointer"
+          >
+            Return to Homepage
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 // Protected Route Component
 const ProtectedRoute = ({ children, allowedRoles }) => {
   const { user, loading } = useAuth();
@@ -44,10 +83,11 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
 
 function AppContent() {
   return (
-    <div className="min-h-screen flex flex-col bg-[#F8FAF7] text-[#1F2937]">
-      <Navbar />
-      <main className="flex-1">
-        <Routes>
+    <ErrorBoundary>
+      <div className="min-h-screen flex flex-col bg-[#F8FAF7] text-[#1F2937]">
+        <Navbar />
+        <main className="flex-1">
+          <Routes>
           {/* Public Routes */}
           <Route path="/" element={<LandingPage />} />
           <Route path="/available-food" element={<AvailableFoodPage />} />
@@ -99,6 +139,7 @@ function AppContent() {
       <Footer />
       <Toast />
     </div>
+  </ErrorBoundary>
   );
 }
 
