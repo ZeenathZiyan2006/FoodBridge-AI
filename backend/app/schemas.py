@@ -1,10 +1,10 @@
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, Field
 from typing import Optional, List
 from datetime import datetime
 
 # User Schemas
 class UserBase(BaseModel):
-    email: EmailStr
+    email: str
     full_name: str
     role: str  # "donor", "receiver", "admin"
     phone: Optional[str] = None
@@ -27,7 +27,7 @@ class UserRegister(UserBase):
     description: Optional[str] = None
 
 class UserLogin(BaseModel):
-    email: EmailStr
+    email: str
     password: str
 
 class DonorProfileOut(BaseModel):
