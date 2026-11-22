@@ -242,7 +242,7 @@ export const LoginPage = () => {
 
             {/* Tab 1: Standard Credentials Login */}
             {activeTab === 'credentials' && (
-              <form onSubmit={handleSubmit} className="space-y-4">
+              <form onSubmit={handleSubmit} autoComplete="off" className="space-y-4">
                 {selectedDemoRole && (
                   <div className="p-2.5 bg-amber-50 border border-amber-200/80 rounded-xl text-amber-900 text-xs flex items-center justify-between">
                     <span className="font-medium text-[11px]">
@@ -274,6 +274,9 @@ export const LoginPage = () => {
                     <input
                       type="email"
                       required
+                      autoComplete="off"
+                      name="foodbridge_login_email"
+                      data-lpignore="true"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="name@foodbridge.ai or your registered email"
@@ -299,6 +302,10 @@ export const LoginPage = () => {
                     <input
                       type={showPassword ? 'text' : 'password'}
                       required
+                      autoComplete="new-password"
+                      name="foodbridge_login_pwd"
+                      data-lpignore="true"
+                      data-form-type="other"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="••••••••••••"

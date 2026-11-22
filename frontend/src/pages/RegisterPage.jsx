@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Sparkles, Utensils, HeartHandshake, ArrowRight, AlertCircle, Check } from 'lucide-react';
+import { Sparkles, Utensils, HeartHandshake, ArrowRight, AlertCircle, Check, Eye, EyeOff, Lock, Mail } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 export const RegisterPage = () => {
@@ -10,6 +10,7 @@ export const RegisterPage = () => {
   const [role, setRole] = useState('donor'); // 'donor' or 'receiver'
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
 
   // Common Fields
   const [fullName, setFullName] = useState('');
@@ -124,8 +125,8 @@ export const RegisterPage = () => {
           </div>
         )}
 
-        {/* Registration Form */}
-        <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Registration Form with autocomplete disabled to prevent Windows Security PIN prompt */}
+        <form onSubmit={handleSubmit} autoComplete="off" className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1 font-heading">
@@ -134,6 +135,8 @@ export const RegisterPage = () => {
               <input
                 type="text"
                 required
+                autoComplete="off"
+                name="foodbridge_contact_name"
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 placeholder="e.g. Ramesh Hegde"
@@ -148,6 +151,9 @@ export const RegisterPage = () => {
               <input
                 type="email"
                 required
+                autoComplete="off"
+                name="foodbridge_user_email"
+                data-lpignore="true"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="contact@example.org"
@@ -161,14 +167,28 @@ export const RegisterPage = () => {
               <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1 font-heading">
                 Password *
               </label>
-              <input
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Minimum 6 characters"
-                className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-hidden focus:ring-2 focus:ring-[#16A34A]/20 focus:border-[#16A34A] transition"
-              />
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  required
+                  autoComplete="new-password"
+                  name="foodbridge_user_pwd"
+                  data-lpignore="true"
+                  data-form-type="other"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Minimum 6 characters"
+                  className="w-full pl-3.5 pr-10 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-hidden focus:ring-2 focus:ring-[#16A34A]/20 focus:border-[#16A34A] transition"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 cursor-pointer"
+                  title={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
             </div>
 
             <div>
