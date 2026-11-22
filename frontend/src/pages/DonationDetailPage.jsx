@@ -55,9 +55,6 @@ export const DonationDetailPage = () => {
 
   const handleRequestSubmit = async (e) => {
     e.preventDefault();
-    if (!user) {
-      await quickLogin('receiver');
-    }
 
     const qty = parseFloat(requestQty);
     if (!qty || qty <= 0) {
@@ -67,6 +64,12 @@ export const DonationDetailPage = () => {
 
     setSubmitting(true);
     try {
+      // If user is not logged in or is currently a donor, automatically switch to receiver demo
+      if (!user || user.role === 'donor') {
+        await quickLogin('receiver');
+        showToast("Switched to Receiver account (Hope Children's Orphanage) to submit request.", "info");
+      }
+
       await api.createRequest({
         donation_id: donation.id,
         requested_quantity: qty,
@@ -104,12 +107,12 @@ export const DonationDetailPage = () => {
   const isExpired = donation.status === 'Expired' || donation.hours_left <= 0;
 
   return (
-    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 animate-fade-in">
       {/* Back button */}
       <div className="flex items-center justify-between">
         <Link
           to="/available-food"
-          className="inline-flex items-center gap-2 text-xs font-bold text-gray-500 hover:text-[#14532D] transition"
+          className="inline-flex items-center gap-2 text-xs font-bold text-gray-500 hover:text-[#14532D] transition cursor-pointer"
         >
           <ArrowLeft className="w-4 h-4" />
           <span>Back to Surplus Listings</span>
@@ -121,9 +124,9 @@ export const DonationDetailPage = () => {
       <SafetyBanner />
 
       {/* Main Details Grid */}
-      <div className="bg-white rounded-3xl overflow-hidden border border-gray-200/80 shadow-xs grid grid-cols-1 md:grid-cols-2">
+      <div className="bg-white rounded-3xl overflow-hidden border border-emerald-950/10 shadow-[0_4px_24px_-4px_rgba(0,0,0,0.05)] grid grid-cols-1 md:grid-cols-2">
         {/* Left: Image & Quick Specs */}
-        <div className="relative h-72 md:h-full bg-gray-100 min-h-[300px]">
+        <div className="relative h-72 md:h-full bg-gray-100 min-h-[320px]">
           <img
             src={donation.image_url}
             alt={donation.food_name}
@@ -132,16 +135,21 @@ export const DonationDetailPage = () => {
               e.target.src = "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&auto=format&fit=crop&q=80";
             }}
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
 
-          <div className="absolute bottom-6 left-6 text-white space-y-1">
-            <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-white/20 backdrop-blur-md">
-              {donation.category}
-            </span>
+          <div className="absolute bottom-6 left-6 right-6 text-white space-y-2">
+            <div className="flex items-center gap-2">
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-white/20 backdrop-blur-md border border-white/20">
+                {donation.category}
+              </span>
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-500/80 backdrop-blur-md">
+                {donation.dietary_type}
+              </span>
+            </div>
             <h1 className="font-heading text-2xl sm:text-3xl font-extrabold drop-shadow-xs leading-tight">
               {donation.food_name}
             </h1>
-            <p className="font-heading text-xl font-bold text-[#F59E0B]">
+            <p className="font-heading text-lg font-bold text-[#F59E0B]">
               {donation.quantity} {donation.quantity_unit} Available
             </p>
           </div>
@@ -161,33 +169,33 @@ export const DonationDetailPage = () => {
 
             <div className="grid grid-cols-2 gap-3 text-xs border-y border-gray-100 py-3.5">
               <div>
-                <span className="text-gray-400 block text-[10px] uppercase font-bold">Dietary Type</span>
+                <span className="text-gray-400 block text-[10px] uppercase font-bold tracking-wider">Dietary Type</span>
                 <span className="font-bold text-gray-900">{donation.dietary_type}</span>
               </div>
               <div>
-                <span className="text-gray-400 block text-[10px] uppercase font-bold">Storage Condition</span>
+                <span className="text-gray-400 block text-[10px] uppercase font-bold tracking-wider">Storage Condition</span>
                 <span className="font-bold text-gray-900">{donation.storage_condition}</span>
               </div>
               <div>
-                <span className="text-gray-400 block text-[10px] uppercase font-bold">Preparation Time</span>
+                <span className="text-gray-400 block text-[10px] uppercase font-bold tracking-wider">Preparation Time</span>
                 <span className="font-semibold text-gray-800">
                   {new Date(donation.prep_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'short' })}
                 </span>
               </div>
               <div>
-                <span className="text-gray-400 block text-[10px] uppercase font-bold">Consumption Deadline</span>
+                <span className="text-gray-400 block text-[10px] uppercase font-bold tracking-wider">Consumption Deadline</span>
                 <span className={`font-bold ${donation.hours_left <= 3 ? 'text-amber-800' : 'text-gray-900'}`}>
                   {donation.hours_left ? `${donation.hours_left} hrs remaining` : 'Expired'}
                 </span>
               </div>
               <div className="col-span-2">
-                <span className="text-gray-400 block text-[10px] uppercase font-bold">Reported Allergens</span>
+                <span className="text-gray-400 block text-[10px] uppercase font-bold tracking-wider">Reported Allergens</span>
                 <span className="font-semibold text-gray-700">{donation.allergen_info || 'None reported'}</span>
               </div>
             </div>
 
             {/* Logistics Info */}
-            <div className="space-y-2 text-xs text-gray-600">
+            <div className="space-y-2 text-xs text-gray-600 bg-[#F8FAF7] p-3.5 rounded-2xl border border-gray-200/60">
               <div className="flex items-start gap-2">
                 <MapPin className="w-3.5 h-3.5 text-[#14532D] shrink-0 mt-0.5" />
                 <span>Pickup: <strong className="text-gray-800">{donation.pickup_location}</strong></span>
@@ -203,28 +211,30 @@ export const DonationDetailPage = () => {
             </div>
           </div>
 
-          {/* Buttons */}
+          {/* Action Buttons */}
           <div className="space-y-2.5 pt-2">
             <button
               onClick={() => setRequestModalOpen(true)}
               disabled={isExpired || donation.status !== 'Available'}
-              className="w-full py-3 px-4 rounded-xl bg-[#14532D] hover:bg-[#0f3d21] text-white font-bold text-xs shadow-2xs transition flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+              className="w-full py-3.5 px-4 rounded-xl bg-[#14532D] hover:bg-[#0f3d21] text-white font-heading font-bold text-xs shadow-md shadow-[#14532D]/20 transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer active:scale-98"
             >
               <HeartHandshake className="w-4 h-4 text-[#ECFDF5]" />
               <span>
                 {isExpired
                   ? 'Expired (Cannot Request)'
                   : donation.status === 'Available'
-                  ? 'Request Surplus Food'
+                  ? user?.role === 'donor'
+                    ? 'Request Surplus Food (as Receiver)'
+                    : 'Request Surplus Food'
                   : `Currently ${donation.status}`}
               </span>
             </button>
 
             <Link
               to={`/matching?donationId=${donation.id}`}
-              className="w-full py-2.5 px-4 rounded-xl bg-[#FFFBEB] hover:bg-[#FEF3C7] text-[#92400E] font-bold text-xs border border-[#F59E0B]/30 transition flex items-center justify-center gap-2"
+              className="w-full py-3 px-4 rounded-xl bg-[#FFFBEB] hover:bg-[#FEF3C7] text-[#92400E] font-heading font-bold text-xs border border-[#F59E0B]/30 transition flex items-center justify-center gap-2"
             >
-              <Sparkles className="w-4 h-4 text-[#F59E0B]" />
+              <Sparkles className="w-3.5 h-3.5 text-[#F59E0B]" />
               <span>Run AI Matching For This Batch</span>
             </Link>
           </div>
@@ -239,18 +249,56 @@ export const DonationDetailPage = () => {
 
       {/* Request Modal */}
       {requestModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs animate-fade-in">
-          <div className="bg-white rounded-3xl max-w-md w-full p-6 sm:p-7 shadow-2xl border border-gray-100">
-            <h3 className="font-heading text-base font-bold text-gray-900 mb-1">Request Food Allocation</h3>
-            <p className="text-xs text-gray-500 mb-4">
-              Submit required quantity for '{donation.food_name}'. The donor will receive an instant notification.
-            </p>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 sm:p-7 shadow-2xl border border-emerald-950/10 space-y-5">
+            <div>
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#14532D] bg-[#ECFDF5] px-2.5 py-0.5 rounded-full border border-[#16A34A]/20">
+                  Receiver Allocation
+                </span>
+                <span className="text-xs text-gray-400 font-mono">Batch #{donation.id}</span>
+              </div>
+              <h3 className="font-heading text-lg font-bold text-gray-900 mt-1">Request Food Allocation</h3>
+              <p className="text-xs text-gray-500 mt-0.5">
+                Submit requested quantity for <strong>{donation.food_name}</strong>.
+              </p>
+            </div>
+
+            {/* Smart Role Context Banner */}
+            {user?.role === 'donor' && (
+              <div className="p-3.5 bg-amber-50/90 border border-amber-200/90 rounded-2xl flex items-start gap-3 text-xs text-amber-900">
+                <Sparkles className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                <div className="space-y-1">
+                  <p className="font-bold">Signed in as Food Donor ({user.full_name})</p>
+                  <p className="text-amber-800/80 leading-relaxed text-[11px]">
+                    Allocation requests are reserved for verified Receivers (NGOs/Shelters). Submitting will seamlessly use our demo receiver account <strong>(Hope Children's Orphanage)</strong> so your request is accepted immediately!
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {!user && (
+              <div className="p-3.5 bg-[#ECFDF5] border border-emerald-200/90 rounded-2xl flex items-start gap-3 text-xs text-[#14532D]">
+                <Sparkles className="w-4 h-4 text-[#16A34A] shrink-0 mt-0.5" />
+                <div className="space-y-1">
+                  <p className="font-bold">Instant 1-Click Evaluation</p>
+                  <p className="text-emerald-800/80 leading-relaxed text-[11px]">
+                    You will be seamlessly connected as <strong>Hope Children's Orphanage (Receiver)</strong> with zero password hassle.
+                  </p>
+                </div>
+              </div>
+            )}
 
             <form onSubmit={handleRequestSubmit} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">
-                  Quantity ({donation.quantity_unit}) *
-                </label>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-xs font-heading font-bold text-gray-700 uppercase tracking-wider">
+                    Quantity ({donation.quantity_unit}) *
+                  </label>
+                  <span className="text-[11px] text-gray-400 font-mono">
+                    Max: {donation.quantity} {donation.quantity_unit}
+                  </span>
+                </div>
                 <input
                   type="number"
                   step="0.5"
@@ -259,20 +307,20 @@ export const DonationDetailPage = () => {
                   required
                   value={requestQty}
                   onChange={(e) => setRequestQty(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-xs focus:outline-hidden focus:ring-2 focus:ring-[#16A34A]/20 focus:border-[#16A34A] font-mono"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-hidden focus:ring-2 focus:ring-[#16A34A]/20 focus:border-[#16A34A] font-mono transition"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">
+                <label className="block text-xs font-heading font-bold text-gray-700 uppercase tracking-wider mb-1.5">
                   Message / Pickup Van ETA
                 </label>
                 <textarea
                   rows="3"
                   value={requestMsg}
                   onChange={(e) => setRequestMsg(e.target.value)}
-                  placeholder="e.g. Can collect by 4:00 PM today..."
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-xs focus:outline-hidden focus:ring-2 focus:ring-[#16A34A]/20 focus:border-[#16A34A]"
+                  placeholder="e.g. Community van will arrive by 3:30 PM..."
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-xs focus:outline-hidden focus:ring-2 focus:ring-[#16A34A]/20 focus:border-[#16A34A] transition"
                 />
               </div>
 
@@ -280,16 +328,22 @@ export const DonationDetailPage = () => {
                 <button
                   type="button"
                   onClick={() => setRequestModalOpen(false)}
-                  className="px-4 py-2 rounded-xl text-gray-700 text-xs font-bold hover:bg-gray-100 transition cursor-pointer"
+                  className="px-4 py-2.5 rounded-xl text-gray-600 text-xs font-bold hover:bg-gray-100 transition cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="px-5 py-2.5 rounded-xl bg-[#14532D] hover:bg-[#0f3d21] text-white text-xs font-bold shadow-2xs transition disabled:opacity-50 cursor-pointer"
+                  className="px-5 py-2.5 rounded-xl bg-[#14532D] hover:bg-[#0f3d21] text-white text-xs font-heading font-bold shadow-md shadow-[#14532D]/20 transition disabled:opacity-50 cursor-pointer active:scale-95"
                 >
-                  {submitting ? 'Submitting...' : 'Confirm Food Request'}
+                  {submitting
+                    ? 'Submitting Request...'
+                    : user?.role === 'donor'
+                    ? '⚡ Switch & Request Food'
+                    : !user
+                    ? '⚡ Request as Hope Shelter'
+                    : 'Confirm Food Request'}
                 </button>
               </div>
             </form>

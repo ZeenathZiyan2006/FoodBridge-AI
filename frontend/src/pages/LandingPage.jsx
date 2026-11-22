@@ -79,18 +79,23 @@ export const LandingPage = () => {
       </div>
 
       {/* Hero Section */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 sm:pt-10">
-        <div className="text-center max-w-3xl mx-auto space-y-6">
-          {/* Badge */}
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#ECFDF5] text-[#14532D] text-xs font-bold border border-[#16A34A]/20 shadow-2xs">
-            <Sparkles className="w-3.5 h-3.5 text-[#16A34A]" />
-            <span>AI-Driven Food Redistribution Platform</span>
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 sm:pt-12">
+        <div className="text-center max-w-3.5xl mx-auto space-y-6">
+          {/* Glowing Badge */}
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/80 backdrop-blur-md text-[#14532D] text-xs font-bold font-heading border border-emerald-950/10 shadow-[0_2px_12px_-2px_rgba(20,83,45,0.08)]">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#16A34A] opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-[#16A34A]"></span>
+            </span>
+            <span>Smart Food Redistribution Network</span>
+            <span className="text-gray-300">|</span>
+            <span className="text-[#16A34A] font-semibold">AI Powered</span>
           </div>
 
-          {/* Hero Heading: Clean, striking, without any unwanted underlines */}
-          <h1 className="font-heading text-4xl sm:text-6xl lg:text-[64px] font-extrabold text-[#1F2937] tracking-tight leading-[1.12]">
+          {/* Hero Heading: Striking, elegant, without any underlines */}
+          <h1 className="font-heading text-4xl sm:text-6xl lg:text-[68px] font-extrabold text-[#1F2937] tracking-tight leading-[1.12]">
             Don't Waste Food.{' '}
-            <span className="text-[#16A34A] block sm:inline">
+            <span className="bg-gradient-to-r from-[#14532D] via-[#16A34A] to-emerald-600 bg-clip-text text-transparent block sm:inline">
               Share Hope.
             </span>
           </h1>
@@ -101,10 +106,10 @@ export const LandingPage = () => {
           </p>
 
           {/* Hero Action Buttons */}
-          <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+          <div className="flex flex-wrap items-center justify-center gap-3.5 pt-2">
             <button
               onClick={() => handleRoleAction('donor', '/add-donation')}
-              className="px-6 py-3.5 rounded-xl bg-[#14532D] hover:bg-[#0f3d21] text-white font-bold text-sm shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 flex items-center gap-2 cursor-pointer"
+              className="px-7 py-3.5 rounded-2xl bg-[#14532D] hover:bg-[#0f3d21] text-white font-heading font-bold text-sm shadow-md shadow-[#14532D]/20 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 flex items-center gap-2.5 cursor-pointer active:scale-95"
             >
               <Utensils className="w-4 h-4 text-[#ECFDF5]" />
               <span>Donate Surplus Food</span>
@@ -112,7 +117,7 @@ export const LandingPage = () => {
 
             <button
               onClick={() => handleRoleAction('receiver', '/receiver-dashboard')}
-              className="px-6 py-3.5 rounded-xl bg-white hover:bg-[#ECFDF5] text-[#14532D] font-bold text-sm border border-[#14532D]/20 hover:border-[#14532D]/40 shadow-2xs hover:-translate-y-0.5 transition-all duration-200 flex items-center gap-2 cursor-pointer"
+              className="px-7 py-3.5 rounded-2xl bg-white hover:bg-[#ECFDF5] text-[#14532D] font-heading font-bold text-sm border border-emerald-950/10 hover:border-[#16A34A]/40 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 flex items-center gap-2.5 cursor-pointer active:scale-95"
             >
               <HeartHandshake className="w-4 h-4 text-[#16A34A]" />
               <span>Find Food (Receivers)</span>
@@ -120,7 +125,7 @@ export const LandingPage = () => {
 
             <Link
               to="/matching"
-              className="px-6 py-3.5 rounded-xl bg-[#FFFBEB] hover:bg-[#FEF3C7] text-[#92400E] font-bold text-sm border border-[#F59E0B]/30 shadow-2xs hover:-translate-y-0.5 transition-all duration-200 flex items-center gap-2"
+              className="px-6 py-3.5 rounded-2xl bg-[#FFFBEB] hover:bg-[#FEF3C7] text-[#92400E] font-heading font-bold text-sm border border-[#F59E0B]/30 shadow-2xs hover:-translate-y-0.5 transition-all duration-200 flex items-center gap-2"
             >
               <Sparkles className="w-4 h-4 text-[#F59E0B]" />
               <span>Explore AI Matching</span>
@@ -128,7 +133,7 @@ export const LandingPage = () => {
           </div>
 
           {/* Key Value Micro-pills */}
-          <div className="flex flex-wrap items-center justify-center gap-6 pt-4 text-xs font-medium text-gray-500">
+          <div className="flex flex-wrap items-center justify-center gap-6 pt-3 text-xs font-medium text-gray-500">
             <div className="flex items-center gap-1.5">
               <Check className="w-3.5 h-3.5 text-[#16A34A]" />
               <span>Zero external paid APIs</span>
@@ -144,41 +149,53 @@ export const LandingPage = () => {
           </div>
         </div>
 
-        {/* Live Real-Time Impact Statistics Section */}
-        <div className="mt-14 max-w-5xl mx-auto bg-white rounded-2xl p-6 sm:p-8 border border-gray-200/80 shadow-xs">
-          <div className="text-center mb-6">
-            <span className="text-[11px] font-bold text-[#14532D] uppercase tracking-wider bg-[#ECFDF5] px-3 py-1 rounded-full border border-[#16A34A]/20">
+        {/* Live Real-Time Impact Statistics Section: 4 Distinct Aesthetic Cards */}
+        <div className="mt-14 max-w-5xl mx-auto space-y-4">
+          <div className="text-center">
+            <span className="text-[11px] font-bold font-heading text-[#14532D] uppercase tracking-wider bg-[#ECFDF5] px-3.5 py-1 rounded-full border border-[#16A34A]/20 shadow-2xs">
               Live Real-Time Impact Statistics
             </span>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center divide-y md:divide-y-0 md:divide-x divide-gray-100">
-            <div className="pt-3 md:pt-0">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="bg-white rounded-3xl p-5 sm:p-6 border border-emerald-950/10 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.04)] text-center space-y-1 hover:-translate-y-0.5 transition-all">
+              <div className="w-9 h-9 rounded-xl bg-emerald-50 text-[#14532D] flex items-center justify-center mx-auto mb-2 border border-emerald-100">
+                <Package className="w-4.5 h-4.5" />
+              </div>
               <p className="font-heading text-3xl sm:text-4xl font-extrabold text-[#14532D] tracking-tight">
                 {stats.total_donations}
               </p>
-              <p className="text-xs font-semibold text-gray-500 mt-1">Total Donations Listed</p>
+              <p className="text-xs font-semibold text-gray-500">Donations Listed</p>
             </div>
 
-            <div className="pt-3 md:pt-0">
+            <div className="bg-white rounded-3xl p-5 sm:p-6 border border-emerald-950/10 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.04)] text-center space-y-1 hover:-translate-y-0.5 transition-all">
+              <div className="w-9 h-9 rounded-xl bg-[#ECFDF5] text-[#16A34A] flex items-center justify-center mx-auto mb-2 border border-emerald-100">
+                <Utensils className="w-4.5 h-4.5" />
+              </div>
               <p className="font-heading text-3xl sm:text-4xl font-extrabold text-[#16A34A] tracking-tight">
                 {stats.total_meals_redistributed}+
               </p>
-              <p className="text-xs font-semibold text-gray-500 mt-1">Meals Redistributed</p>
+              <p className="text-xs font-semibold text-gray-500">Meals Redistributed</p>
             </div>
 
-            <div className="pt-3 md:pt-0">
+            <div className="bg-white rounded-3xl p-5 sm:p-6 border border-emerald-950/10 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.04)] text-center space-y-1 hover:-translate-y-0.5 transition-all">
+              <div className="w-9 h-9 rounded-xl bg-[#FFFBEB] text-[#D97706] flex items-center justify-center mx-auto mb-2 border border-amber-200">
+                <ChefHat className="w-4.5 h-4.5" />
+              </div>
               <p className="font-heading text-3xl sm:text-4xl font-extrabold text-[#D97706] tracking-tight">
                 {stats.active_donors}
               </p>
-              <p className="text-xs font-semibold text-gray-500 mt-1">Active Food Donors</p>
+              <p className="text-xs font-semibold text-gray-500">Active Food Donors</p>
             </div>
 
-            <div className="pt-3 md:pt-0">
+            <div className="bg-white rounded-3xl p-5 sm:p-6 border border-emerald-950/10 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.04)] text-center space-y-1 hover:-translate-y-0.5 transition-all">
+              <div className="w-9 h-9 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center mx-auto mb-2 border border-purple-100">
+                <HeartHandshake className="w-4.5 h-4.5" />
+              </div>
               <p className="font-heading text-3xl sm:text-4xl font-extrabold text-purple-700 tracking-tight">
                 {stats.active_receivers}
               </p>
-              <p className="text-xs font-semibold text-gray-500 mt-1">Shelters & NGOs Connected</p>
+              <p className="text-xs font-semibold text-gray-500">Shelters & NGOs</p>
             </div>
           </div>
         </div>
@@ -186,13 +203,13 @@ export const LandingPage = () => {
 
       {/* Evaluator Quick Demo Fast Track */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="bg-[#14532D] rounded-2xl p-6 sm:p-8 text-white shadow-md flex flex-col md:flex-row items-center justify-between gap-6 border border-[#14532D]">
+        <div className="bg-gradient-to-r from-[#14532D] via-[#166534] to-[#0F3820] rounded-3xl p-6 sm:p-8 text-white shadow-lg flex flex-col md:flex-row items-center justify-between gap-6 border border-[#14532D]/40">
           <div className="space-y-1 text-center md:text-left">
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-[#FFFBEB] text-[#92400E] font-bold text-[11px] uppercase tracking-wider mb-1">
-              Project Evaluator Fast Track
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md text-[#FFFBEB] font-bold text-[11px] uppercase tracking-wider mb-1 border border-white/15">
+              <span>⚡ Project Evaluator Fast Track</span>
             </div>
-            <h3 className="font-heading text-lg font-bold text-white">Instantly Test Any Role with 1 Click</h3>
-            <p className="text-[#ECFDF5]/80 text-xs max-w-xl">
+            <h3 className="font-heading text-xl font-bold text-white">Instantly Test Any Role with 1 Click</h3>
+            <p className="text-[#ECFDF5]/85 text-xs max-w-xl leading-relaxed">
               Pre-seeded with real regional data across Manipal & Udupi (donors, shelters, urgency levels, and full database records).
             </p>
           </div>
@@ -200,19 +217,19 @@ export const LandingPage = () => {
           <div className="flex flex-wrap items-center justify-center gap-2.5">
             <button
               onClick={() => handleRoleAction('donor', '/donor-dashboard')}
-              className="px-3.5 py-2 rounded-xl bg-white text-[#14532D] font-bold text-xs hover:bg-[#ECFDF5] transition shadow-2xs cursor-pointer"
+              className="px-4 py-2.5 rounded-xl bg-white text-[#14532D] font-heading font-bold text-xs hover:bg-[#ECFDF5] transition shadow-xs cursor-pointer active:scale-95"
             >
               🍲 Donor (MIT Canteen)
             </button>
             <button
               onClick={() => handleRoleAction('receiver', '/receiver-dashboard')}
-              className="px-3.5 py-2 rounded-xl bg-[#16A34A] hover:bg-[#15803D] text-white font-bold text-xs transition shadow-2xs cursor-pointer"
+              className="px-4 py-2.5 rounded-xl bg-[#16A34A] hover:bg-[#15803D] text-white font-heading font-bold text-xs transition shadow-xs cursor-pointer active:scale-95"
             >
               🏠 Receiver (Hope Shelter)
             </button>
             <button
               onClick={() => handleRoleAction('admin', '/admin-dashboard')}
-              className="px-3.5 py-2 rounded-xl bg-purple-700 hover:bg-purple-800 text-white font-bold text-xs transition shadow-2xs cursor-pointer"
+              className="px-4 py-2.5 rounded-xl bg-purple-700 hover:bg-purple-800 text-white font-heading font-bold text-xs transition shadow-xs cursor-pointer active:scale-95"
             >
               🛡️ Admin Dashboard
             </button>

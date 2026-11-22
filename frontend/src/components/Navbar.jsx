@@ -298,11 +298,48 @@ export const Navbar = () => {
             )}
           </div>
 
-          {/* Mobile hamburger */}
+          {/* Mobile Right Quick Action & Hamburger */}
           <div className="flex lg:hidden items-center gap-2">
+            {/* Active Role Indicator Pill on mobile */}
+            {user ? (
+              <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold font-heading border shadow-2xs ${
+                user.role === 'donor'
+                  ? 'bg-[#FFFBEB] text-[#92400E] border-amber-300/80'
+                  : user.role === 'receiver'
+                  ? 'bg-[#ECFDF5] text-[#14532D] border-[#16A34A]/30'
+                  : 'bg-purple-50 text-purple-800 border-purple-200'
+              }`}>
+                <span className={`w-1.5 h-1.5 rounded-full ${
+                  user.role === 'donor' ? 'bg-[#F59E0B]' : user.role === 'receiver' ? 'bg-[#16A34A]' : 'bg-purple-600'
+                }`} />
+                <span className="capitalize">{user.role}</span>
+              </span>
+            ) : (
+              <button
+                type="button"
+                onClick={() => handleQuickSwitch('receiver')}
+                className="px-2.5 py-1 rounded-full text-[11px] font-bold font-heading bg-[#ECFDF5] text-[#14532D] border border-[#16A34A]/30 shadow-2xs"
+              >
+                ⚡ Demo
+              </button>
+            )}
+
+            {user && (
+              <button
+                type="button"
+                onClick={handleOpenNotifications}
+                className="relative p-1.5 rounded-xl text-gray-500 hover:text-[#14532D] hover:bg-[#ECFDF5] transition"
+              >
+                <Bell className="w-5 h-5" />
+                {unreadCount > 0 && (
+                  <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-[#16A34A]" />
+                )}
+              </button>
+            )}
+
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-2 rounded-xl text-gray-600 hover:text-[#14532D] hover:bg-gray-100"
+              className="p-2 rounded-xl text-gray-600 hover:text-[#14532D] hover:bg-gray-100 transition cursor-pointer"
             >
               {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
             </button>
@@ -312,38 +349,66 @@ export const Navbar = () => {
 
       {/* Mobile Drawer */}
       {mobileMenuOpen && (
-        <div className="lg:hidden border-t border-gray-100 bg-white px-4 pt-3 pb-6 space-y-3 animate-fade-in text-sm font-medium">
-          {navLinks.map((link) => (
-            <Link
-              key={link.name}
-              to={link.path}
-              onClick={() => setMobileMenuOpen(false)}
-              className="block px-3 py-2 rounded-xl hover:bg-[#ECFDF5] text-gray-700 font-semibold"
-            >
-              {link.name}
-            </Link>
-          ))}
+        <div className="lg:hidden border-t border-gray-100 bg-white/98 backdrop-blur-xl px-4 pt-3 pb-6 space-y-4 animate-fade-in text-sm font-medium shadow-xl">
+          {/* Active Persona Card in Drawer */}
+          {user && (
+            <div className="p-3.5 bg-[#F8FAF7] rounded-2xl border border-gray-200/80 flex items-center justify-between">
+              <div>
+                <p className="text-[10px] font-mono font-bold uppercase tracking-wider text-gray-400">
+                  Active Evaluator Persona
+                </p>
+                <p className="font-heading font-extrabold text-gray-900 text-sm mt-0.5">
+                  {user.full_name}
+                </p>
+                <span className={`inline-block mt-1 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider ${
+                  user.role === 'donor'
+                    ? 'bg-amber-100 text-amber-900'
+                    : user.role === 'receiver'
+                    ? 'bg-emerald-100 text-emerald-900'
+                    : 'bg-purple-100 text-purple-900'
+                }`}>
+                  {user.role} Account
+                </span>
+              </div>
+              <Link
+                to={getDashboardPath()}
+                onClick={() => setMobileMenuOpen(false)}
+                className="px-3 py-1.5 bg-[#14532D] text-white rounded-xl text-xs font-bold font-heading shadow-xs"
+              >
+                Go to Dashboard →
+              </Link>
+            </div>
+          )}
 
-          <div className="pt-3 border-t border-gray-100 space-y-2">
-            <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider px-3">
-              Switch Demo Role
+          {/* Quick Role Switcher Buttons */}
+          <div className="p-3 bg-amber-50/70 border border-amber-200/80 rounded-2xl space-y-2">
+            <p className="text-[10px] font-mono font-bold uppercase tracking-wider text-amber-900">
+              ⚡ 1-Click Role Switcher
             </p>
-            <div className="grid grid-cols-3 gap-2 px-1">
+            <div className="grid grid-cols-3 gap-2">
               <button
                 onClick={() => {
                   handleQuickSwitch('donor');
                   setMobileMenuOpen(false);
                 }}
-                className="py-1.5 px-2 bg-[#ECFDF5] text-[#14532D] rounded-lg text-xs font-bold text-center border border-[#16A34A]/20"
+                className={`py-2 px-2 rounded-xl text-xs font-heading font-bold text-center border transition cursor-pointer ${
+                  user?.role === 'donor'
+                    ? 'bg-[#14532D] text-white border-[#14532D]'
+                    : 'bg-white text-gray-800 border-amber-200 hover:bg-[#ECFDF5]'
+                }`}
               >
-                Donor
+                Food Donor
               </button>
               <button
                 onClick={() => {
                   handleQuickSwitch('receiver');
                   setMobileMenuOpen(false);
                 }}
-                className="py-1.5 px-2 bg-[#ECFDF5] text-[#14532D] rounded-lg text-xs font-bold text-center border border-[#16A34A]/20"
+                className={`py-2 px-2 rounded-xl text-xs font-heading font-bold text-center border transition cursor-pointer ${
+                  user?.role === 'receiver'
+                    ? 'bg-[#14532D] text-white border-[#14532D]'
+                    : 'bg-white text-gray-800 border-amber-200 hover:bg-[#ECFDF5]'
+                }`}
               >
                 Receiver
               </button>
@@ -352,25 +417,53 @@ export const Navbar = () => {
                   handleQuickSwitch('admin');
                   setMobileMenuOpen(false);
                 }}
-                className="py-1.5 px-2 bg-purple-50 text-purple-800 rounded-lg text-xs font-bold text-center border border-purple-200"
+                className={`py-2 px-2 rounded-xl text-xs font-heading font-bold text-center border transition cursor-pointer ${
+                  user?.role === 'admin'
+                    ? 'bg-purple-800 text-white border-purple-800'
+                    : 'bg-white text-gray-800 border-amber-200 hover:bg-purple-50'
+                }`}
               >
                 Admin
               </button>
             </div>
           </div>
 
-          <div className="pt-3 border-t border-gray-100">
+          {/* Nav Links */}
+          <div className="space-y-1">
+            {navLinks.map((link) => (
+              <Link
+                key={link.name}
+                to={link.path}
+                onClick={() => setMobileMenuOpen(false)}
+                className={`block px-3.5 py-2.5 rounded-xl font-heading text-xs font-bold transition ${
+                  location.pathname === link.path
+                    ? 'bg-[#ECFDF5] text-[#14532D]'
+                    : 'text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                {link.name}
+              </Link>
+            ))}
+          </div>
+
+          <div className="pt-2 border-t border-gray-100">
             {user ? (
-              <div className="flex items-center justify-between px-3">
+              <div className="flex items-center justify-between px-2">
                 <Link
                   to={getDashboardPath()}
                   onClick={() => setMobileMenuOpen(false)}
-                  className="font-bold text-[#14532D]"
+                  className="font-heading font-bold text-xs text-[#14532D]"
                 >
-                  Dashboard ({user.role})
+                  View My Dashboard
                 </Link>
-                <button onClick={logout} className="text-rose-600 font-semibold text-xs">
-                  Logout
+                <button
+                  onClick={() => {
+                    logout();
+                    setMobileMenuOpen(false);
+                  }}
+                  className="text-rose-600 font-bold text-xs hover:underline cursor-pointer"
+                >
+                  Sign Out
                 </button>
               </div>
             ) : (
@@ -378,14 +471,14 @@ export const Navbar = () => {
                 <Link
                   to="/login"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="flex-1 py-2 text-center rounded-xl border border-gray-200 text-gray-800 font-bold text-xs"
+                  className="flex-1 py-2.5 text-center rounded-xl border border-gray-200 text-gray-800 font-heading font-bold text-xs"
                 >
                   Sign In
                 </Link>
                 <Link
                   to="/register"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="flex-1 py-2 text-center rounded-xl bg-[#14532D] text-white font-bold text-xs"
+                  className="flex-1 py-2.5 text-center rounded-xl bg-[#14532D] text-white font-heading font-bold text-xs shadow-xs"
                 >
                   Get Started
                 </Link>
