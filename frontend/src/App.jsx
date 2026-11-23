@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, Link } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { LanguageProvider } from './context/LanguageContext';
 import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
 import { Toast } from './components/Toast';
@@ -17,7 +18,6 @@ import { RegisterPage } from './pages/RegisterPage';
 import { DonorDashboard } from './pages/DonorDashboard';
 import { AddDonationPage } from './pages/AddDonationPage';
 import { ReceiverDashboard } from './pages/ReceiverDashboard';
-import { AdminDashboard } from './pages/AdminDashboard';
 import { HotspotsPage } from './pages/HotspotsPage';
 import { ImpactPage } from './pages/ImpactPage';
 
@@ -36,12 +36,12 @@ class ErrorBoundary extends React.Component {
   render() {
     if (this.state.hasError) {
       return (
-        <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center space-y-4 bg-[#F8FAF7]">
-          <div className="w-14 h-14 rounded-2xl bg-[#ECFDF5] text-[#14532D] flex items-center justify-center border border-[#16A34A]/20 text-2xl">
+        <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center space-y-4 bg-[#F8FAF7] font-sans">
+          <div className="w-14 h-14 rounded-2xl bg-[#E8F5ED] text-[#123C2D] flex items-center justify-center border border-[#16865B]/20 text-2xl shadow-xs">
             🌱
           </div>
-          <h2 className="text-xl font-bold font-heading text-gray-900">FoodBridge AI Notice</h2>
-          <p className="text-xs text-gray-500 max-w-md">
+          <h2 className="text-xl font-bold font-heading text-[#202B25]">FoodBridge AI Notice</h2>
+          <p className="text-xs text-[#718078] max-w-md">
             {this.state.error?.message || "An unexpected issue occurred while rendering. Click below to return home."}
           </p>
           <button
@@ -49,7 +49,7 @@ class ErrorBoundary extends React.Component {
               this.setState({ hasError: false, error: null });
               window.location.href = '/';
             }}
-            className="px-5 py-2.5 rounded-xl bg-[#14532D] hover:bg-[#0f3d21] text-white font-heading font-bold text-xs shadow-xs cursor-pointer"
+            className="px-5 py-2.5 rounded-xl bg-[#123C2D] hover:bg-[#16865B] text-white font-heading font-bold text-xs shadow-xs transition cursor-pointer"
           >
             Return to Homepage
           </button>
@@ -67,12 +67,11 @@ const RoleAccessDenied = ({ user, allowedRoles }) => {
   const getAuthorizedDashboard = () => {
     if (user?.role === 'donor') return '/donor-dashboard';
     if (user?.role === 'receiver') return '/receiver-dashboard';
-    if (user?.role === 'admin') return '/admin-dashboard';
     return '/';
   };
 
   return (
-    <div className="min-h-[75vh] flex items-center justify-center p-4 sm:p-6 text-center">
+    <div className="min-h-[75vh] flex items-center justify-center p-4 sm:p-6 text-center font-sans">
       <div className="max-w-lg w-full bg-white rounded-3xl p-8 sm:p-10 border border-rose-200 shadow-xl space-y-6 animate-fade-in">
         <div className="w-16 h-16 rounded-2xl bg-rose-50 border border-rose-200 text-rose-600 flex items-center justify-center mx-auto shadow-inner">
           <ShieldAlert className="w-8 h-8 text-rose-600" />
@@ -82,20 +81,20 @@ const RoleAccessDenied = ({ user, allowedRoles }) => {
           <span className="px-3 py-1 rounded-full text-[11px] font-mono font-bold uppercase tracking-wider bg-rose-100 text-rose-800 border border-rose-200">
             HTTP 403 Forbidden • Role Restricted
           </span>
-          <h2 className="font-heading text-2xl font-extrabold text-slate-900 tracking-tight">
+          <h2 className="font-heading text-2xl font-extrabold text-[#202B25] tracking-tight">
             Role Permission Required
           </h2>
-          <p className="text-xs sm:text-sm text-slate-600 leading-relaxed max-w-md mx-auto">
-            You are signed in as <strong className="text-slate-900 font-bold">{user?.full_name}</strong> with the account role <span className="uppercase font-bold text-rose-700 bg-rose-50 px-2 py-0.5 rounded border border-rose-200">{user?.role}</span> ({user?.email}).
+          <p className="text-xs sm:text-sm text-[#718078] leading-relaxed max-w-md mx-auto">
+            You are signed in as <strong className="text-[#202B25] font-bold">{user?.full_name}</strong> with the account role <span className="uppercase font-bold text-rose-700 bg-rose-50 px-2 py-0.5 rounded border border-rose-200">{user?.role}</span> ({user?.email}).
           </p>
         </div>
 
-        <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 text-left text-xs text-slate-600 space-y-1.5">
-          <p className="font-bold text-slate-800 font-heading">Security Protocol Notice:</p>
+        <div className="p-4 rounded-2xl bg-[#F8FAF7] border border-gray-200 text-left text-xs text-[#718078] space-y-1.5">
+          <p className="font-bold text-[#202B25] font-heading">Security Protocol Notice:</p>
           <p>
-            This dashboard is strictly restricted to accounts registered as: <strong className="text-slate-900 uppercase">{allowedRoles?.join(', ')}</strong>.
+            This dashboard is strictly restricted to accounts registered as: <strong className="text-[#202B25] uppercase">{allowedRoles?.join(', ')}</strong>.
           </p>
-          <p className="text-[11px] text-slate-500">
+          <p className="text-[11px] text-[#718078]">
             Under FoodBridge AI's Role-Based Access Control (RBAC), a single email address cannot access unauthorized donor or receiver workflows.
           </p>
         </div>
@@ -103,14 +102,14 @@ const RoleAccessDenied = ({ user, allowedRoles }) => {
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
           <Link
             to={getAuthorizedDashboard()}
-            className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-[#064E3B] hover:bg-[#043327] text-white font-heading font-bold text-xs shadow-xs transition"
+            className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-[#123C2D] hover:bg-[#16865B] text-white font-heading font-bold text-xs shadow-xs transition"
           >
             Go to My {user?.role?.toUpperCase()} Dashboard →
           </Link>
 
           <button
             onClick={logout}
-            className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-slate-100 hover:bg-rose-50 hover:text-rose-700 text-slate-700 font-heading font-bold text-xs border border-slate-200 transition cursor-pointer"
+            className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-gray-100 hover:bg-rose-50 hover:text-rose-700 text-gray-700 font-heading font-bold text-xs border border-gray-200 transition cursor-pointer"
           >
             Sign Out & Switch Account
           </button>
@@ -126,7 +125,7 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-sm text-gray-400">
+      <div className="min-h-screen flex items-center justify-center text-sm text-[#718078] font-sans">
         Authenticating session...
       </div>
     );
@@ -148,7 +147,7 @@ function AppContent() {
 
   return (
     <ErrorBoundary>
-      <div className="min-h-screen flex flex-col bg-[#F8FAF7] text-[#1F2937]">
+      <div className="min-h-screen flex flex-col bg-[#F8FAF7] text-[#202B25] font-sans">
         <Navbar />
         <main className="flex-1">
           <Routes>
@@ -166,7 +165,7 @@ function AppContent() {
           <Route
             path="/donor-dashboard"
             element={
-              <ProtectedRoute allowedRoles={['donor', 'admin']}>
+              <ProtectedRoute allowedRoles={['donor']}>
                 <DonorDashboard />
               </ProtectedRoute>
             }
@@ -174,7 +173,7 @@ function AppContent() {
           <Route
             path="/add-donation"
             element={
-              <ProtectedRoute allowedRoles={['donor', 'admin']}>
+              <ProtectedRoute allowedRoles={['donor']}>
                 <AddDonationPage />
               </ProtectedRoute>
             }
@@ -182,16 +181,8 @@ function AppContent() {
           <Route
             path="/receiver-dashboard"
             element={
-              <ProtectedRoute allowedRoles={['receiver', 'admin']}>
+              <ProtectedRoute allowedRoles={['receiver']}>
                 <ReceiverDashboard />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/admin-dashboard"
-            element={
-              <ProtectedRoute allowedRoles={['admin']}>
-                <AdminDashboard />
               </ProtectedRoute>
             }
           />
@@ -209,14 +200,14 @@ function AppContent() {
         onClick={toggleDashboardPanel}
         type="button"
         aria-label="Open Dashboard Side Panel"
-        className="fixed bottom-6 right-6 z-40 bg-[#064E3B] hover:bg-[#043327] text-white p-3.5 sm:px-4 sm:py-2.5 rounded-full shadow-xl hover:shadow-2xl border border-emerald-500/30 flex items-center gap-2.5 transition-all duration-300 hover:scale-105 active:scale-95 group cursor-pointer"
+        className="fixed bottom-6 right-6 z-40 bg-[#123C2D] hover:bg-[#16865B] text-white p-3.5 sm:px-4 sm:py-2.5 rounded-full shadow-xl hover:shadow-2xl border border-[#42B883]/30 flex items-center gap-2.5 transition-all duration-300 hover:scale-105 active:scale-95 group cursor-pointer"
         title="Open Dashboard Side Panel (Live KPIs & Role Switcher)"
       >
         <span className="relative flex h-2.5 w-2.5">
-          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-          <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-400"></span>
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#42B883] opacity-75"></span>
+          <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#42B883]"></span>
         </span>
-        <LayoutDashboard className="w-4.5 h-4.5 text-emerald-300 group-hover:rotate-6 transition-transform" />
+        <LayoutDashboard className="w-4.5 h-4.5 text-[#42B883] group-hover:rotate-6 transition-transform" />
         <span className="hidden sm:inline font-heading font-bold text-xs tracking-wide">
           Dashboard Panel
         </span>
@@ -228,10 +219,12 @@ function AppContent() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <Router>
-        <AppContent />
-      </Router>
-    </AuthProvider>
+    <LanguageProvider>
+      <AuthProvider>
+        <Router>
+          <AppContent />
+        </Router>
+      </AuthProvider>
+    </LanguageProvider>
   );
 }

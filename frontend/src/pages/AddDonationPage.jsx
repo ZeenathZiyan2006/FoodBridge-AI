@@ -11,7 +11,9 @@ import {
   CheckCircle2,
   ArrowLeft,
   Sparkles,
-  ShieldCheck
+  ShieldCheck,
+  Package,
+  Layers
 } from 'lucide-react';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
@@ -68,7 +70,7 @@ export const AddDonationPage = () => {
 
     const deadlineDate = new Date(consumptionDeadline);
     if (deadlineDate <= new Date()) {
-      setError('Food Safety Error: Consumption deadline must be a future time.');
+      setError('Food Safety Requirement: Consumption deadline must be a future time.');
       return;
     }
 
@@ -107,32 +109,28 @@ export const AddDonationPage = () => {
     }
   };
 
-  const handleSaveDraft = () => {
-    showToast('Donation draft saved locally.', 'info');
-  };
-
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10 space-y-8 animate-fade-in">
       {/* Header */}
       <div className="flex items-center justify-between">
         <Link
           to="/donor-dashboard"
-          className="inline-flex items-center gap-2 text-xs font-bold text-gray-500 hover:text-[#14532D] transition"
+          className="inline-flex items-center gap-2 text-xs font-heading font-bold text-[#718078] hover:text-[#123C2D] transition-all"
         >
           <ArrowLeft className="w-4 h-4" />
           <span>Back to Donor Dashboard</span>
         </Link>
-        <span className="text-xs font-bold text-[#14532D] bg-[#ECFDF5] px-3 py-1 rounded-full border border-[#16A34A]/20">
+        <span className="text-xs font-heading font-extrabold text-[#123C2D] bg-[#E8F5ED] px-3.5 py-1 rounded-full border border-[#16865B]/20">
           Zero Food Waste Initiative
         </span>
       </div>
 
-      <div className="bg-white rounded-3xl p-6 sm:p-10 border border-gray-200/80 shadow-xs space-y-8">
+      <div className="bg-white rounded-3xl p-6 sm:p-10 border border-[#123C2D]/8 shadow-[0_4px_24px_-4px_rgba(18,60,45,0.04)] space-y-8">
         <div>
-          <h1 className="font-heading text-2xl sm:text-3xl font-extrabold text-[#1F2937] tracking-tight">
+          <h1 className="font-heading text-2xl sm:text-3xl font-extrabold text-[#123C2D] tracking-tight">
             List Surplus Food Donation
           </h1>
-          <p className="text-xs sm:text-sm text-gray-500 mt-1">
+          <p className="text-xs sm:text-sm text-[#718078] mt-1">
             Provide food details accurately so the AI matching engine can locate nearby orphanages and community shelters.
           </p>
         </div>
@@ -149,13 +147,14 @@ export const AddDonationPage = () => {
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* 1. Basic Food Info */}
           <div className="space-y-4">
-            <h3 className="font-heading text-xs font-bold text-[#14532D] uppercase tracking-wider">
-              1. Food Item Details
+            <h3 className="font-heading text-xs font-extrabold text-[#123C2D] uppercase tracking-wider flex items-center gap-2">
+              <span className="w-5 h-5 rounded-full bg-[#E8F5ED] text-[#123C2D] flex items-center justify-center font-mono text-[10px]">1</span>
+              <span>Food Item Specifications</span>
             </h3>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="sm:col-span-2">
-                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">
+                <label className="block text-xs font-heading font-bold text-[#202B25] uppercase tracking-wider mb-1.5">
                   Food Item Name *
                 </label>
                 <input
@@ -163,19 +162,19 @@ export const AddDonationPage = () => {
                   required
                   value={foodName}
                   onChange={(e) => setFoodName(e.target.value)}
-                  placeholder="e.g. Fresh Vegetable Biryani with Raita & Salad"
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-xs focus:outline-hidden focus:ring-2 focus:ring-[#16A34A]/20 focus:border-[#16A34A]"
+                  placeholder="e.g. Fresh Steamed Basmati Rice & Mixed Dal Curry"
+                  className="w-full px-4 py-2.5 rounded-xl border border-[#123C2D]/12 text-xs sm:text-sm focus:outline-hidden focus:ring-2 focus:ring-[#16865B]/25 focus:border-[#16865B] bg-[#F8FAF7]/50"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">
-                  Food Category *
+                <label className="block text-xs font-heading font-bold text-[#202B25] uppercase tracking-wider mb-1.5">
+                  Category *
                 </label>
                 <select
                   value={category}
                   onChange={handleCategoryChange}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-xs focus:outline-hidden focus:ring-2 focus:ring-[#16A34A]/20 focus:border-[#16A34A] bg-white text-gray-800"
+                  className="w-full px-4 py-2.5 rounded-xl border border-[#123C2D]/12 text-xs sm:text-sm bg-[#F8FAF7]/50 cursor-pointer"
                 >
                   <option value="Cooked Meals">Cooked Meals</option>
                   <option value="Rice and Grains">Rice and Grains</option>
@@ -188,13 +187,13 @@ export const AddDonationPage = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">
-                  Dietary Classification *
+                <label className="block text-xs font-heading font-bold text-[#202B25] uppercase tracking-wider mb-1.5">
+                  Dietary Type *
                 </label>
                 <select
                   value={dietaryType}
                   onChange={(e) => setDietaryType(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-xs focus:outline-hidden focus:ring-2 focus:ring-[#16A34A]/20 focus:border-[#16A34A] bg-white text-gray-800"
+                  className="w-full px-4 py-2.5 rounded-xl border border-[#123C2D]/12 text-xs sm:text-sm bg-[#F8FAF7]/50 cursor-pointer"
                 >
                   <option value="Vegetarian">Vegetarian</option>
                   <option value="Non-Vegetarian">Non-Vegetarian</option>
@@ -203,29 +202,30 @@ export const AddDonationPage = () => {
               </div>
 
               <div className="sm:col-span-2">
-                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">
-                  Food Description & Ingredients
+                <label className="block text-xs font-heading font-bold text-[#202B25] uppercase tracking-wider mb-1.5">
+                  Description / Preparation Highlights
                 </label>
                 <textarea
-                  rows="3"
+                  rows="2"
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Describe dishes, ingredients, freshness condition, and portion size..."
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-xs focus:outline-hidden focus:ring-2 focus:ring-[#16A34A]/20 focus:border-[#16A34A]"
+                  placeholder="e.g. Prepared cleanly for lunch buffet, packed hygienically in thermal containers..."
+                  className="w-full px-4 py-2.5 rounded-xl border border-[#123C2D]/12 text-xs sm:text-sm focus:outline-hidden focus:ring-2 focus:ring-[#16865B]/25 focus:border-[#16865B] bg-[#F8FAF7]/50"
                 />
               </div>
             </div>
           </div>
 
           {/* 2. Quantity & Units */}
-          <div className="space-y-4 pt-4 border-t border-gray-100">
-            <h3 className="font-heading text-xs font-bold text-[#14532D] uppercase tracking-wider">
-              2. Quantity & Capacity
+          <div className="space-y-4 pt-4 border-t border-[#123C2D]/8">
+            <h3 className="font-heading text-xs font-extrabold text-[#123C2D] uppercase tracking-wider flex items-center gap-2">
+              <span className="w-5 h-5 rounded-full bg-[#E8F5ED] text-[#123C2D] flex items-center justify-center font-mono text-[10px]">2</span>
+              <span>Portion Volume</span>
             </h3>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">
+                <label className="block text-xs font-heading font-bold text-[#202B25] uppercase tracking-wider mb-1.5">
                   Quantity Available *
                 </label>
                 <input
@@ -235,104 +235,103 @@ export const AddDonationPage = () => {
                   required
                   value={quantity}
                   onChange={(e) => setQuantity(e.target.value)}
-                  placeholder="e.g. 35"
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-xs focus:outline-hidden focus:ring-2 focus:ring-[#16A34A]/20 focus:border-[#16A34A] font-mono"
+                  placeholder="e.g. 45"
+                  className="w-full px-4 py-2.5 rounded-xl border border-[#123C2D]/12 text-xs sm:text-sm focus:outline-hidden focus:ring-2 focus:ring-[#16865B]/25 focus:border-[#16865B] bg-[#F8FAF7]/50 font-mono"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">
-                  Measurement Unit *
+                <label className="block text-xs font-heading font-bold text-[#202B25] uppercase tracking-wider mb-1.5">
+                  Unit Measurement *
                 </label>
                 <select
                   value={quantityUnit}
                   onChange={(e) => setQuantityUnit(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-xs focus:outline-hidden focus:ring-2 focus:ring-[#16A34A]/20 focus:border-[#16A34A] bg-white text-gray-800"
+                  className="w-full px-4 py-2.5 rounded-xl border border-[#123C2D]/12 text-xs sm:text-sm bg-[#F8FAF7]/50 cursor-pointer"
                 >
-                  <option value="Meals">Meals (Portions)</option>
+                  <option value="Meals">Meals / Portions</option>
+                  <option value="Packets">Packets</option>
                   <option value="Kg">Kilograms (Kg)</option>
-                  <option value="Packets">Packets / Boxes</option>
                 </select>
               </div>
             </div>
           </div>
 
-          {/* 3. Safety & Deadlines */}
-          <div className="space-y-4 pt-4 border-t border-gray-100">
-            <h3 className="font-heading text-xs font-bold text-[#14532D] uppercase tracking-wider">
-              3. Food Safety, Urgency & Deadlines
+          {/* 3. Safe Window & Hygiene */}
+          <div className="space-y-4 pt-4 border-t border-[#123C2D]/8">
+            <h3 className="font-heading text-xs font-extrabold text-[#123C2D] uppercase tracking-wider flex items-center gap-2">
+              <span className="w-5 h-5 rounded-full bg-[#E8F5ED] text-[#123C2D] flex items-center justify-center font-mono text-[10px]">3</span>
+              <span>Food Safety & Consumption Timeline</span>
             </h3>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">
-                  Preparation Date & Time *
+                <label className="block text-xs font-heading font-bold text-[#202B25] uppercase tracking-wider mb-1.5">
+                  Preparation Timestamp *
                 </label>
                 <input
                   type="datetime-local"
                   required
                   value={prepTime}
                   onChange={(e) => setPrepTime(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-xs focus:outline-hidden focus:ring-2 focus:ring-[#16A34A]/20 focus:border-[#16A34A] bg-white"
+                  className="w-full px-4 py-2.5 rounded-xl border border-[#123C2D]/12 text-xs sm:text-sm bg-[#F8FAF7]/50"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">
-                  Consumption Deadline * (Food Safety Cutoff)
+                <label className="block text-xs font-heading font-bold text-[#202B25] uppercase tracking-wider mb-1.5">
+                  Safe Consumption Deadline *
                 </label>
                 <input
                   type="datetime-local"
                   required
                   value={consumptionDeadline}
                   onChange={(e) => setConsumptionDeadline(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-[#F59E0B]/50 text-xs focus:outline-hidden focus:ring-2 focus:ring-[#F59E0B]/20 focus:border-[#F59E0B] bg-[#FFFBEB]"
+                  className="w-full px-4 py-2.5 rounded-xl border border-[#123C2D]/12 text-xs sm:text-sm bg-[#F8FAF7]/50"
                 />
-                <p className="text-[11px] text-[#92400E] mt-1">
-                  ⚡ Items approaching deadline are automatically promoted as Urgent by the AI engine.
-                </p>
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">
+                <label className="block text-xs font-heading font-bold text-[#202B25] uppercase tracking-wider mb-1.5">
                   Storage Condition *
                 </label>
                 <select
                   value={storageCondition}
                   onChange={(e) => setStorageCondition(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-xs focus:outline-hidden focus:ring-2 focus:ring-[#16A34A]/20 focus:border-[#16A34A] bg-white text-gray-800"
+                  className="w-full px-4 py-2.5 rounded-xl border border-[#123C2D]/12 text-xs sm:text-sm bg-[#F8FAF7]/50 cursor-pointer"
                 >
-                  <option value="Hot Holding">Hot Holding (&gt; 65°C)</option>
-                  <option value="Refrigerated">Refrigerated (&lt; 4°C)</option>
-                  <option value="Frozen">Deep Frozen (&lt; -18°C)</option>
-                  <option value="Room Temperature">Room Temperature (Dry Pantry)</option>
+                  <option value="Hot Holding">Hot Holding (&gt; 60°C)</option>
+                  <option value="Refrigerated">Refrigerated (&lt; 5°C)</option>
+                  <option value="Room Temperature">Room Temperature (Dry)</option>
+                  <option value="Frozen">Frozen (&lt; -18°C)</option>
                 </select>
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">
-                  Allergen Information
+                <label className="block text-xs font-heading font-bold text-[#202B25] uppercase tracking-wider mb-1.5">
+                  Allergen Warnings
                 </label>
                 <input
                   type="text"
                   value={allergenInfo}
                   onChange={(e) => setAllergenInfo(e.target.value)}
-                  placeholder="e.g. Contains Dairy, Gluten, Peanuts"
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-xs focus:outline-hidden focus:ring-2 focus:ring-[#16A34A]/20 focus:border-[#16A34A]"
+                  placeholder="e.g. Contains dairy and peanuts"
+                  className="w-full px-4 py-2.5 rounded-xl border border-[#123C2D]/12 text-xs sm:text-sm bg-[#F8FAF7]/50"
                 />
               </div>
             </div>
           </div>
 
           {/* 4. Pickup Logistics */}
-          <div className="space-y-4 pt-4 border-t border-gray-100">
-            <h3 className="font-heading text-xs font-bold text-[#14532D] uppercase tracking-wider">
-              4. Pickup Logistics & Donor Contact
+          <div className="space-y-4 pt-4 border-t border-[#123C2D]/8">
+            <h3 className="font-heading text-xs font-extrabold text-[#123C2D] uppercase tracking-wider flex items-center gap-2">
+              <span className="w-5 h-5 rounded-full bg-[#E8F5ED] text-[#123C2D] flex items-center justify-center font-mono text-[10px]">4</span>
+              <span>Pickup & Handover Logistics</span>
             </h3>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="sm:col-span-2">
-                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">
+                <label className="block text-xs font-heading font-bold text-[#202B25] uppercase tracking-wider mb-1.5">
                   Pickup Location & Landmark *
                 </label>
                 <input
@@ -340,81 +339,54 @@ export const AddDonationPage = () => {
                   required
                   value={pickupLocation}
                   onChange={(e) => setPickupLocation(e.target.value)}
-                  placeholder="e.g. MIT Campus Food Court Counter 3, Manipal"
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-xs focus:outline-hidden focus:ring-2 focus:ring-[#16A34A]/20 focus:border-[#16A34A]"
+                  placeholder="Building, Road, Landmark, Town"
+                  className="w-full px-4 py-2.5 rounded-xl border border-[#123C2D]/12 text-xs sm:text-sm bg-[#F8FAF7]/50"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">
-                  Available Pickup Window
-                </label>
-                <input
-                  type="text"
-                  value={availablePickupTime}
-                  onChange={(e) => setAvailablePickupTime(e.target.value)}
-                  placeholder="e.g. 2:30 PM - 5:00 PM"
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-xs focus:outline-hidden focus:ring-2 focus:ring-[#16A34A]/20 focus:border-[#16A34A]"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">
-                  Donor Phone / Contact *
+                <label className="block text-xs font-heading font-bold text-[#202B25] uppercase tracking-wider mb-1.5">
+                  Pickup Window Hours *
                 </label>
                 <input
                   type="text"
                   required
-                  value={donorContact}
-                  onChange={(e) => setDonorContact(e.target.value)}
-                  placeholder="+91 98450 12345"
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-xs focus:outline-hidden focus:ring-2 focus:ring-[#16A34A]/20 focus:border-[#16A34A]"
+                  value={availablePickupTime}
+                  onChange={(e) => setAvailablePickupTime(e.target.value)}
+                  placeholder="e.g. Immediate pickup (within 2 hours)"
+                  className="w-full px-4 py-2.5 rounded-xl border border-[#123C2D]/12 text-xs sm:text-sm bg-[#F8FAF7]/50"
                 />
               </div>
 
-              <div className="sm:col-span-2">
-                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">
-                  Food Image URL (Optional)
+              <div>
+                <label className="block text-xs font-heading font-bold text-[#202B25] uppercase tracking-wider mb-1.5">
+                  Donor Contact Phone *
                 </label>
                 <input
-                  type="url"
-                  value={imageUrl}
-                  onChange={(e) => setImageUrl(e.target.value)}
-                  placeholder="https://images.unsplash.com/..."
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-xs focus:outline-hidden focus:ring-2 focus:ring-[#16A34A]/20 focus:border-[#16A34A]"
+                  type="tel"
+                  required
+                  value={donorContact}
+                  onChange={(e) => setDonorContact(e.target.value)}
+                  placeholder="+91 98450 12345"
+                  className="w-full px-4 py-2.5 rounded-xl border border-[#123C2D]/12 text-xs sm:text-sm bg-[#F8FAF7]/50"
                 />
-                <p className="text-[11px] text-gray-400 mt-1">
-                  Leave blank to auto-assign a high-quality illustration based on category.
-                </p>
               </div>
             </div>
           </div>
 
-          {/* Form Actions */}
-          <div className="pt-6 border-t border-gray-100 flex flex-col sm:flex-row items-center justify-end gap-3">
-            <button
-              type="button"
-              onClick={() => navigate('/donor-dashboard')}
-              className="w-full sm:w-auto px-5 py-2.5 rounded-xl border border-gray-200 text-gray-700 text-xs font-bold hover:bg-gray-50 transition cursor-pointer"
+          <div className="pt-4 flex flex-col sm:flex-row items-center justify-end gap-3">
+            <Link
+              to="/donor-dashboard"
+              className="w-full sm:w-auto px-6 py-3 rounded-full text-[#718078] hover:bg-gray-100 font-heading font-bold text-xs text-center transition"
             >
               Cancel
-            </button>
-
-            <button
-              type="button"
-              onClick={handleSaveDraft}
-              className="w-full sm:w-auto px-5 py-2.5 rounded-xl border border-[#16A34A]/30 text-[#14532D] bg-[#ECFDF5] text-xs font-bold hover:bg-[#d1fae5] transition cursor-pointer"
-            >
-              Save Draft
-            </button>
-
+            </Link>
             <button
               type="submit"
               disabled={loading}
-              className="w-full sm:w-auto px-7 py-2.5 rounded-xl bg-[#14532D] hover:bg-[#0f3d21] text-white text-xs font-bold shadow-2xs transition flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
+              className="w-full sm:w-auto px-8 py-3.5 rounded-full bg-[#123C2D] hover:bg-[#16865B] text-white font-heading font-extrabold text-xs sm:text-sm shadow-md shadow-[#123C2D]/20 hover:shadow-lg transition-all duration-200 cursor-pointer disabled:opacity-50"
             >
-              <Sparkles className="w-4 h-4 text-[#ECFDF5]" />
-              <span>{loading ? 'Submitting & Activating AI...' : 'Submit Donation & Match'}</span>
+              {loading ? 'Submitting to AI Engine...' : 'Publish Surplus Donation Batch'}
             </button>
           </div>
         </form>

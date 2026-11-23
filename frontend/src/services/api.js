@@ -9,10 +9,17 @@ async function request(endpoint, options = {}) {
     ...options.headers,
   };
 
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-    ...options,
-    headers,
-  });
+  let response;
+  try {
+    response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      ...options,
+      headers,
+    });
+  } catch (netErr) {
+    throw new Error(
+      `Cannot connect to FoodBridge AI backend server at ${API_BASE_URL}. Please ensure the backend is running (python -m uvicorn app.main:app --reload --port 8000).`
+    );
+  }
 
   if (!response.ok) {
     let errorDetail = 'An error occurred';
@@ -44,6 +51,9 @@ export const api = {
     body: JSON.stringify(userData),
   }),
   getMe: () => request('/api/auth/me'),
+  deleteMyAccount: () => request('/api/auth/me', {
+    method: 'DELETE',
+  }),
   getDemoAccounts: () => request('/api/auth/demo-accounts'),
   quickLogin: (role) => request(`/api/auth/quick-login/${role}`, {
     method: 'POST',
@@ -81,9 +91,13 @@ export const api = {
   }),
   getMyRequests: () => request('/api/requests/my-requests'),
   getDonationRequests: (donationId) => request(`/api/requests/donation/${donationId}`),
-  updateRequestStatus: (requestId, status, notes = '') => request(`/api/requests/${requestId}/status`, {
+  updateRequestStatus: (requestId, status, notes = '', approved_quantity = null) => request(`/api/requests/${requestId}/status`, {
     method: 'PATCH',
-    body: JSON.stringify({ status, notes }),
+    body: JSON.stringify({
+      status,
+      notes,
+      ...(approved_quantity !== null && approved_quantity !== undefined ? { approved_quantity: Number(approved_quantity) } : {})
+    }),
   }),
 
   // AI Matching

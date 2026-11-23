@@ -31,10 +31,13 @@ def enrich_donation_out(donation: FoodDonation) -> FoodDonationOut:
     """Helper to attach computed urgency and hours_left to output schema."""
     urgency_tier, hours_left = compute_donation_urgency(donation)
     
-    # Auto-adjust status to Expired if passed deadline and was still Available
+    # Auto-adjust status to Expired if passed deadline
     effective_status = donation.status
-    if hours_left <= 0 and effective_status == "Available":
+    rem = donation.remaining_quantity if donation.remaining_quantity is not None else donation.quantity
+    if hours_left <= 0:
         effective_status = "Expired"
+    elif rem <= 0 and effective_status == "Available":
+        effective_status = "Allocated"
 
     d_out = FoodDonationOut.from_orm(donation)
     d_out.status = effective_status
@@ -88,9 +91,11 @@ def list_donations(
         enriched = enrich_donation_out(d)
 
         # Strict safety check: If filtering for available food or only_available is set,
-        # exclude any donation that is not strictly Available or whose consumption deadline passed (expired)
+        # exclude any donation that is not strictly Available, or whose consumption deadline passed (expired),
+        # or whose remaining quantity is exhausted (<= 0)
+        rem = d.remaining_quantity if d.remaining_quantity is not None else d.quantity
         if only_available or status_filter == "Available":
-            if enriched.status != "Available" or enriched.hours_left <= 0:
+            if enriched.status != "Available" or enriched.hours_left <= 0 or rem <= 0:
                 continue
 
         if urgency and urgency != "All":
@@ -161,6 +166,7 @@ def create_donation(
         category=donation_in.category,
         description=donation_in.description,
         quantity=donation_in.quantity,
+        remaining_quantity=donation_in.quantity,
         quantity_unit=donation_in.quantity_unit,
         dietary_type=donation_in.dietary_type,
         prep_time=donation_in.prep_time.replace(tzinfo=None),

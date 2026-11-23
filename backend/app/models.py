@@ -48,6 +48,7 @@ class ReceiverProfile(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), unique=True, nullable=False)
     organization_name = Column(String(150), nullable=False)
+    organization_id = Column(String(100), nullable=True)  # Mandatory verification ID (e.g. DARPAN / Govt Reg ID)
     organization_type = Column(String(50), default="NGO")  # NGO, Orphanage, Shelter, Community Kitchen, Food Bank, Old Age Home
     contact_person = Column(String(100), nullable=True)
     required_capacity_meals = Column(Integer, default=50)
@@ -67,6 +68,7 @@ class FoodDonation(Base):
     category = Column(String(50), nullable=False)  # Cooked Meals, Rice and Grains, Fruits, Vegetables, Bakery Items, Packaged Food, Other
     description = Column(Text, nullable=True)
     quantity = Column(Float, nullable=False)
+    remaining_quantity = Column(Float, nullable=True)  # Remaining available quantity for multi-receiver allocation
     quantity_unit = Column(String(20), default="Meals")  # Meals, Kg, Packets
     dietary_type = Column(String(30), default="Vegetarian")  # Vegetarian, Non-Vegetarian, Vegan
     prep_time = Column(DateTime, nullable=False)
@@ -96,6 +98,7 @@ class FoodRequest(Base):
     donation_id = Column(Integer, ForeignKey("food_donations.id"), nullable=False)
     receiver_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     requested_quantity = Column(Float, nullable=False)
+    approved_quantity = Column(Float, nullable=True)  # Quantity allocated by the donor to this receiver
     message = Column(Text, nullable=True)
     status = Column(String(30), default="Requested")  # Requested, Accepted, Rejected, Cancelled, Completed
     created_at = Column(DateTime, default=datetime.datetime.utcnow)

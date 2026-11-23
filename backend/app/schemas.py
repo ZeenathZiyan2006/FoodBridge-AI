@@ -6,7 +6,7 @@ from datetime import datetime
 class UserBase(BaseModel):
     email: str
     full_name: str
-    role: str  # "donor", "receiver", "admin"
+    role: str  # "donor", "receiver"
     phone: Optional[str] = None
     address: Optional[str] = None
     location_name: Optional[str] = "Manipal"
@@ -14,10 +14,11 @@ class UserBase(BaseModel):
     longitude: Optional[float] = None
 
 class UserRegister(UserBase):
-    password: str
+    password: Optional[str] = "password123"
     organization_type: Optional[str] = None
     # Receiver-specific
     organization_name: Optional[str] = None
+    organization_id: Optional[str] = None  # Mandatory verification ID (Govt Reg / DARPAN ID)
     contact_person: Optional[str] = None
     required_capacity_meals: Optional[int] = 50
     dietary_preference: Optional[str] = "Both"
@@ -41,6 +42,7 @@ class DonorProfileOut(BaseModel):
 
 class ReceiverProfileOut(BaseModel):
     organization_name: Optional[str] = None
+    organization_id: Optional[str] = None
     organization_type: Optional[str] = None
     contact_person: Optional[str] = None
     required_capacity_meals: Optional[int] = None
@@ -72,6 +74,7 @@ class FoodDonationCreate(BaseModel):
     category: str  # Cooked Meals, Rice and Grains, Fruits, Vegetables, Bakery Items, Packaged Food, Other
     description: Optional[str] = None
     quantity: float
+    remaining_quantity: Optional[float] = None
     quantity_unit: str = "Meals"  # Meals, Kg, Packets
     dietary_type: str = "Vegetarian"  # Vegetarian, Non-Vegetarian, Vegan
     prep_time: datetime
@@ -116,6 +119,7 @@ class FoodRequestOut(BaseModel):
     donation_id: int
     receiver_id: int
     requested_quantity: float
+    approved_quantity: Optional[float] = None
     message: Optional[str] = None
     status: str
     created_at: datetime
@@ -132,6 +136,7 @@ class FoodDonationOut(BaseModel):
     category: str
     description: Optional[str] = None
     quantity: float
+    remaining_quantity: Optional[float] = None
     quantity_unit: str
     dietary_type: str
     prep_time: datetime
@@ -166,6 +171,7 @@ class FoodRequestCreate(BaseModel):
 
 class StatusUpdateSchema(BaseModel):
     status: str
+    approved_quantity: Optional[float] = None
     notes: Optional[str] = None
 
 # AI Matching Result Schemas
@@ -207,6 +213,7 @@ class DonationRecommendationResponse(BaseModel):
     food_name: str
     category: str
     quantity: float
+    remaining_quantity: Optional[float] = None
     quantity_unit: str
     dietary_type: str
     pickup_location: str

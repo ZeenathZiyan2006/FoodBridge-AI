@@ -11,29 +11,33 @@ import {
   Shield,
   Menu,
   X,
-  Layers,
-  Flame,
-  Globe,
-  Leaf
+  Leaf,
+  CheckCircle2,
+  ArrowRight,
+  Globe
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 import { api } from '../services/api';
 
 export const Navbar = () => {
-  const { user, logout, quickLogin, unreadCount, fetchUnreadCount, toggleDashboardPanel } = useAuth();
+  const { user, logout, quickLogin, unreadCount, fetchUnreadCount, toggleDashboardPanel, showToast } = useAuth();
+  const { language, setLanguage, t } = useLanguage();
   const navigate = useNavigate();
   const location = useLocation();
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [demoDropdownOpen, setDemoDropdownOpen] = useState(false);
+  const [langDropdownOpen, setLangDropdownOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [loadingNotifs, setLoadingNotifs] = useState(false);
 
   const notifRef = useRef(null);
   const demoRef = useRef(null);
+  const langRef = useRef(null);
 
-  // Close dropdowns on click outside
+  // Close dropdowns on outside click
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (notifRef.current && !notifRef.current.contains(e.target)) {
@@ -41,6 +45,9 @@ export const Navbar = () => {
       }
       if (demoRef.current && !demoRef.current.contains(e.target)) {
         setDemoDropdownOpen(false);
+      }
+      if (langRef.current && !langRef.current.contains(e.target)) {
+        setLangDropdownOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -74,48 +81,52 @@ export const Navbar = () => {
 
   const handleQuickSwitch = async (role) => {
     setDemoDropdownOpen(false);
-    await quickLogin(role);
-    if (role === 'donor') navigate('/donor-dashboard');
-    else if (role === 'receiver') navigate('/receiver-dashboard');
-    else if (role === 'admin') navigate('/admin-dashboard');
+    if (user) {
+      showToast('Active session in progress. Direct role switching is prohibited. Please sign out first.', 'error');
+      return;
+    }
+    const res = await quickLogin(role);
+    if (res) {
+      if (role === 'donor') navigate('/donor-dashboard');
+      else if (role === 'receiver') navigate('/receiver-dashboard');
+    }
   };
 
   const getDashboardPath = () => {
     if (!user) return '/login';
     if (user.role === 'donor') return '/donor-dashboard';
     if (user.role === 'receiver') return '/receiver-dashboard';
-    if (user.role === 'admin') return '/admin-dashboard';
     return '/';
   };
 
   const navLinks = [
-    { name: 'Home', path: '/' },
-    { name: 'Available Food', path: '/available-food' },
-    { name: 'AI Matching', path: '/matching' },
-    { name: 'Impact Tracker', path: '/impact' },
-    { name: 'Waste Hotspots', path: '/hotspots' },
+    { name: t('home'), path: '/' },
+    { name: t('available_food'), path: '/available-food' },
+    { name: t('ai_matching'), path: '/matching' },
+    { name: t('impact_tracker'), path: '/impact' },
+    { name: t('waste_hotspots'), path: '/hotspots' },
   ];
 
   return (
-    <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-gray-200/80 shadow-xs">
+    <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-[#123C2D]/8 shadow-xs">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-17">
-          {/* Logo */}
+        <div className="flex items-center justify-between h-18">
+          {/* Logo on the left with a beautiful green leaf icon */}
           <Link to="/" className="flex items-center gap-3 group">
-            <div className="w-9 h-9 rounded-xl bg-[#14532D] text-white flex items-center justify-center shadow-xs transition-transform duration-200 group-hover:scale-105">
-              <Leaf className="w-5 h-5 text-[#ECFDF5]" />
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-[#123C2D] to-[#16865B] text-white flex items-center justify-center shadow-md shadow-[#123C2D]/15 transition-all duration-300 group-hover:scale-105 group-hover:shadow-lg group-hover:shadow-[#16865B]/25">
+              <Leaf className="w-5 h-5 text-[#E8F5ED]" />
             </div>
-            <div className="flex items-center gap-1.5">
-              <span className="font-heading text-lg font-extrabold tracking-tight text-[#14532D]">
+            <div className="flex items-center gap-2">
+              <span className="font-heading text-xl font-extrabold tracking-tight text-[#123C2D]">
                 FoodBridge
               </span>
-              <span className="text-[11px] font-bold uppercase tracking-wider bg-[#ECFDF5] text-[#16A34A] px-2 py-0.5 rounded-md border border-[#16A34A]/20">
+              <span className="text-[10px] font-mono font-bold uppercase tracking-wider bg-[#E8F5ED] text-[#16865B] px-2 py-0.5 rounded-full border border-[#16865B]/20">
                 AI
               </span>
             </div>
           </Link>
 
-          {/* Desktop Nav Links */}
+          {/* Desktop Navigation Links */}
           <nav className="hidden lg:flex items-center gap-1">
             {navLinks.map((link) => {
               const isActive = location.pathname === link.path;
@@ -123,10 +134,10 @@ export const Navbar = () => {
                 <Link
                   key={link.name}
                   to={link.path}
-                  className={`px-3.5 py-2 rounded-xl text-xs font-semibold tracking-normal transition-all duration-150 ${
+                  className={`px-4 py-2 rounded-full text-xs font-heading font-semibold tracking-wide transition-all duration-200 ${
                     isActive
-                      ? 'text-[#14532D] bg-[#ECFDF5] font-bold shadow-2xs'
-                      : 'text-gray-600 hover:text-[#14532D] hover:bg-gray-50'
+                      ? 'text-[#123C2D] bg-[#E8F5ED] font-bold shadow-2xs'
+                      : 'text-[#718078] hover:text-[#123C2D] hover:bg-[#F8FAF7]'
                   }`}
                 >
                   {link.name}
@@ -137,82 +148,108 @@ export const Navbar = () => {
 
           {/* Right Actions */}
           <div className="hidden sm:flex items-center gap-2.5">
-            {/* Demo Switcher */}
-            <div className="relative" ref={demoRef}>
+            {/* Multi-language Selector (English, Hindi, Kannada) */}
+            <div className="relative" ref={langRef}>
               <button
                 type="button"
-                onClick={() => setDemoDropdownOpen(!demoDropdownOpen)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-[#F59E0B]/30 bg-[#FFFBEB] text-[#92400E] text-xs font-bold hover:bg-[#FEF3C7] transition shadow-2xs cursor-pointer"
+                onClick={() => setLangDropdownOpen(!langDropdownOpen)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-[#123C2D]/12 bg-white hover:bg-[#F8FAF7] text-[#123C2D] text-xs font-heading font-bold shadow-2xs transition-all cursor-pointer"
+                title="Change Language / ಭಾಷೆಯನ್ನು ಬದಲಾಯಿಸಿ / भाषा बदलें"
               >
-                <Sparkles className="w-3.5 h-3.5 text-[#F59E0B]" />
-                <span>Demo Accounts</span>
-                <ChevronDown className="w-3 h-3 text-[#92400E]" />
+                <Globe className="w-3.5 h-3.5 text-[#16865B]" />
+                <span className="uppercase text-[11px] tracking-wider">
+                  {language === 'en' ? 'EN' : language === 'hi' ? 'हिंदी' : 'ಕನ್ನಡ'}
+                </span>
+                <ChevronDown className="w-3 h-3 text-[#718078]" />
               </button>
 
-              {demoDropdownOpen && (
-                <div className="absolute right-0 mt-2 w-72 bg-white rounded-2xl shadow-xl border border-gray-100 p-2.5 z-50 animate-fade-in text-xs space-y-1">
-                  <div className="px-3 py-1.5 border-b border-gray-100 font-semibold text-gray-400 uppercase tracking-wider text-[10px]">
-                    Evaluator Demo Accounts
+              {langDropdownOpen && (
+                <div className="absolute right-0 mt-2 w-44 bg-white rounded-2xl shadow-xl border border-[#123C2D]/10 p-1.5 z-50 animate-fade-in text-xs space-y-0.5">
+                  <div className="px-3 py-1 text-[10px] font-mono font-bold uppercase tracking-wider text-[#718078] border-b border-gray-100">
+                    Language / ಭಾಷೆ / भाषा
                   </div>
                   <button
-                    onClick={() => handleQuickSwitch('donor')}
-                    className="w-full text-left p-2.5 rounded-xl hover:bg-[#ECFDF5] flex flex-col gap-0.5 text-gray-800 transition cursor-pointer"
+                    onClick={() => { setLanguage('en'); setLangDropdownOpen(false); }}
+                    className={`w-full text-left px-3 py-2 rounded-xl flex items-center justify-between font-heading font-medium transition cursor-pointer ${
+                      language === 'en' ? 'bg-[#E8F5ED] text-[#123C2D] font-bold' : 'hover:bg-gray-50 text-gray-700'
+                    }`}
                   >
-                    <div className="flex items-center justify-between">
-                      <span className="flex items-center gap-1.5 font-heading font-extrabold text-xs text-[#064E3B]">
-                        <Utensils className="w-3.5 h-3.5 text-[#059669]" />
-                        <span>Food Donor Account</span>
-                      </span>
-                      <span className="text-[10px] bg-emerald-100 text-[#064E3B] px-1.5 py-0.5 rounded font-mono font-bold">MIT Canteen</span>
-                    </div>
-                    <span className="text-[11px] font-mono text-gray-500">donor.manipal@foodbridge.ai</span>
+                    <span>English</span>
+                    {language === 'en' && <CheckCircle2 className="w-3.5 h-3.5 text-[#16865B]" />}
                   </button>
 
                   <button
-                    onClick={() => handleQuickSwitch('receiver')}
-                    className="w-full text-left p-2.5 rounded-xl hover:bg-teal-50 flex flex-col gap-0.5 text-gray-800 transition cursor-pointer"
+                    onClick={() => { setLanguage('hi'); setLangDropdownOpen(false); }}
+                    className={`w-full text-left px-3 py-2 rounded-xl flex items-center justify-between font-heading font-medium transition cursor-pointer ${
+                      language === 'hi' ? 'bg-[#E8F5ED] text-[#123C2D] font-bold' : 'hover:bg-gray-50 text-gray-700'
+                    }`}
                   >
-                    <div className="flex items-center justify-between">
-                      <span className="flex items-center gap-1.5 font-heading font-extrabold text-xs text-teal-800">
-                        <HeartHandshake className="w-3.5 h-3.5 text-teal-600" />
-                        <span>Receiver NGO Account</span>
-                      </span>
-                      <span className="text-[10px] bg-teal-100 text-teal-800 px-1.5 py-0.5 rounded font-mono font-bold">Hope Shelter</span>
-                    </div>
-                    <span className="text-[11px] font-mono text-gray-500">receiver.hope@foodbridge.ai</span>
+                    <span>हिंदी (Hindi)</span>
+                    {language === 'hi' && <CheckCircle2 className="w-3.5 h-3.5 text-[#16865B]" />}
                   </button>
 
                   <button
-                    onClick={() => handleQuickSwitch('admin')}
-                    className="w-full text-left p-2.5 rounded-xl hover:bg-purple-50 flex flex-col gap-0.5 text-gray-800 transition cursor-pointer"
+                    onClick={() => { setLanguage('kn'); setLangDropdownOpen(false); }}
+                    className={`w-full text-left px-3 py-2 rounded-xl flex items-center justify-between font-heading font-medium transition cursor-pointer ${
+                      language === 'kn' ? 'bg-[#E8F5ED] text-[#123C2D] font-bold' : 'hover:bg-gray-50 text-gray-700'
+                    }`}
                   >
-                    <div className="flex items-center justify-between">
-                      <span className="flex items-center gap-1.5 font-heading font-extrabold text-xs text-purple-900">
-                        <Shield className="w-3.5 h-3.5 text-purple-600" />
-                        <span>Administrator Account</span>
-                      </span>
-                      <span className="text-[10px] bg-purple-100 text-purple-800 px-1.5 py-0.5 rounded font-mono font-bold">Director</span>
-                    </div>
-                    <span className="text-[11px] font-mono text-gray-500">admin@foodbridge.ai</span>
+                    <span>ಕನ್ನಡ (Kannada)</span>
+                    {language === 'kn' && <CheckCircle2 className="w-3.5 h-3.5 text-[#16865B]" />}
                   </button>
                 </div>
               )}
             </div>
 
-            {/* Dashboard Side Panel Trigger */}
-            <button
-              type="button"
-              onClick={toggleDashboardPanel}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-emerald-500/30 bg-emerald-50/80 text-[#064E3B] text-xs font-bold hover:bg-emerald-100/90 transition shadow-2xs cursor-pointer group"
-              title="Open Dashboard Side Panel (Live Metrics & 1-Click Persona Switching)"
-            >
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-              </span>
-              <LayoutDashboard className="w-3.5 h-3.5 text-[#059669] group-hover:rotate-6 transition-transform" />
-              <span>Dashboard Panel</span>
-            </button>
+            {/* Demo Switcher for guests (Hidden once user is signed in) */}
+            {!user && (
+              <div className="relative" ref={demoRef}>
+                <button
+                  type="button"
+                  onClick={() => setDemoDropdownOpen(!demoDropdownOpen)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-[#E9A23B]/30 bg-[#FEF7EC] text-[#9A6217] text-xs font-heading font-bold hover:bg-[#FDF0D9] transition-all shadow-2xs cursor-pointer"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-[#E9A23B]" />
+                  <span>Demo Accounts</span>
+                  <ChevronDown className="w-3 h-3 text-[#9A6217]" />
+                </button>
+
+                {demoDropdownOpen && (
+                  <div className="absolute right-0 mt-2 w-76 bg-white rounded-2xl shadow-xl border border-[#123C2D]/10 p-2.5 z-50 animate-fade-in text-xs space-y-1">
+                    <div className="px-3 py-1.5 border-b border-gray-100 font-semibold text-[#718078] uppercase tracking-wider text-[10px]">
+                      Quick Evaluator Persona Switch
+                    </div>
+                    <button
+                      onClick={() => handleQuickSwitch('donor')}
+                      className="w-full text-left p-2.5 rounded-xl hover:bg-[#E8F5ED] flex flex-col gap-0.5 text-[#202B25] transition cursor-pointer"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="flex items-center gap-1.5 font-heading font-extrabold text-xs text-[#123C2D]">
+                          <Utensils className="w-3.5 h-3.5 text-[#16865B]" />
+                          <span>Food Donor Account</span>
+                        </span>
+                        <span className="text-[10px] bg-[#E8F5ED] text-[#123C2D] px-1.5 py-0.5 rounded font-mono font-bold">MIT Canteen</span>
+                      </div>
+                      <span className="text-[11px] font-mono text-[#718078]">donor.manipal@foodbridge.ai</span>
+                    </button>
+
+                    <button
+                      onClick={() => handleQuickSwitch('receiver')}
+                      className="w-full text-left p-2.5 rounded-xl hover:bg-[#E8F5ED] flex flex-col gap-0.5 text-[#202B25] transition cursor-pointer"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="flex items-center gap-1.5 font-heading font-extrabold text-xs text-[#16865B]">
+                          <HeartHandshake className="w-3.5 h-3.5 text-[#16865B]" />
+                          <span>Receiver NGO Account</span>
+                        </span>
+                        <span className="text-[10px] bg-teal-50 text-teal-800 px-1.5 py-0.5 rounded font-mono font-bold">Hope Shelter</span>
+                      </div>
+                      <span className="text-[11px] font-mono text-[#718078]">receiver.hope@foodbridge.ai</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* In-app Notifications */}
             {user && (
@@ -220,24 +257,24 @@ export const Navbar = () => {
                 <button
                   type="button"
                   onClick={handleOpenNotifications}
-                  className="relative p-2 rounded-xl text-gray-500 hover:text-[#14532D] hover:bg-[#ECFDF5] transition cursor-pointer"
+                  className="relative p-2 rounded-full text-[#718078] hover:text-[#123C2D] hover:bg-[#E8F5ED] transition cursor-pointer"
                   title="Notifications"
                 >
                   <Bell className="w-4.5 h-4.5" />
                   {unreadCount > 0 && (
-                    <span className="absolute top-1 right-1 w-4 h-4 rounded-full bg-[#16A34A] text-white text-[10px] font-bold flex items-center justify-center shadow-xs">
+                    <span className="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-[#16865B] text-white text-[10px] font-bold flex items-center justify-center shadow-xs">
                       {unreadCount}
                     </span>
                   )}
                 </button>
 
                 {notificationsOpen && (
-                  <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white rounded-2xl shadow-xl border border-gray-100 p-3 z-50 animate-fade-in text-xs">
+                  <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white rounded-2xl shadow-xl border border-[#123C2D]/10 p-3 z-50 animate-fade-in text-xs">
                     <div className="flex items-center justify-between pb-2 mb-2 border-b border-gray-100 px-2">
-                      <span className="font-heading font-bold text-gray-900 text-sm">Notifications</span>
+                      <span className="font-heading font-bold text-[#123C2D] text-sm">Notifications</span>
                       <button
                         onClick={handleMarkAllRead}
-                        className="text-[#16A34A] hover:underline text-[11px] font-semibold cursor-pointer"
+                        className="text-[#16865B] hover:underline text-[11px] font-semibold cursor-pointer"
                       >
                         Mark all read
                       </button>
@@ -255,21 +292,21 @@ export const Navbar = () => {
                             className={`p-2.5 rounded-xl transition border ${
                               n.is_read
                                 ? 'bg-gray-50/60 border-gray-100 text-gray-600'
-                                : 'bg-[#ECFDF5] border-[#16A34A]/20 text-gray-900 font-medium'
+                                : 'bg-[#E8F5ED] border-[#16865B]/20 text-[#202B25] font-medium'
                             }`}
                           >
                             <div className="flex items-center justify-between mb-1">
-                              <span className="font-bold text-[#14532D] text-xs">{n.title}</span>
+                              <span className="font-bold text-[#123C2D] text-xs">{n.title}</span>
                               <span className="text-[10px] text-gray-400">
                                 {new Date(n.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                               </span>
                             </div>
-                            <p className="text-gray-700 leading-snug">{n.message}</p>
+                            <p className="text-[#202B25] leading-snug">{n.message}</p>
                             {n.link && (
                               <Link
                                 to={n.link}
                                 onClick={() => setNotificationsOpen(false)}
-                                className="inline-block mt-1 text-[11px] text-[#16A34A] font-semibold hover:underline"
+                                className="inline-block mt-1 text-[11px] text-[#16865B] font-semibold hover:underline"
                               >
                                 View Details →
                               </Link>
@@ -283,16 +320,16 @@ export const Navbar = () => {
               </div>
             )}
 
-            {/* User Profile or Login */}
+            {/* User Profile or Sign In / Get Started */}
             {user ? (
               <div className="flex items-center gap-2">
                 <Link
                   to={getDashboardPath()}
-                  className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-[#14532D] hover:bg-[#0f3d21] text-white text-xs font-semibold shadow-xs transition duration-150"
+                  className="flex items-center gap-2 px-4 py-2 rounded-full bg-[#123C2D] hover:bg-[#16865B] text-white text-xs font-heading font-bold shadow-md shadow-[#123C2D]/15 hover:shadow-lg transition-all duration-200"
                 >
-                  <LayoutDashboard className="w-3.5 h-3.5 text-[#ECFDF5]" />
+                  <LayoutDashboard className="w-3.5 h-3.5 text-[#E8F5ED]" />
                   <span>Dashboard</span>
-                  <span className="bg-[#0f3d21] text-[#ECFDF5] px-1.5 py-0.5 rounded text-[10px] uppercase font-bold tracking-wider">
+                  <span className="bg-[#16865B] text-white px-2 py-0.5 rounded-full text-[10px] uppercase font-bold tracking-wider">
                     {user.role}
                   </span>
                 </Link>
@@ -300,8 +337,8 @@ export const Navbar = () => {
                 <button
                   type="button"
                   onClick={logout}
-                  className="p-2 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition cursor-pointer"
-                  title="Logout"
+                  className="p-2 text-[#718078] hover:text-rose-600 hover:bg-rose-50 rounded-full transition cursor-pointer"
+                  title="Sign Out"
                 >
                   <LogOut className="w-4 h-4" />
                 </button>
@@ -310,13 +347,13 @@ export const Navbar = () => {
               <div className="flex items-center gap-2">
                 <Link
                   to="/login"
-                  className="px-3.5 py-2 text-xs font-bold text-gray-700 hover:text-[#14532D] transition"
+                  className="px-4 py-2 rounded-full text-xs font-heading font-bold text-[#202B25] hover:text-[#123C2D] hover:bg-[#E8F5ED] transition-all"
                 >
                   Sign In
                 </Link>
                 <Link
                   to="/register"
-                  className="px-4 py-2 rounded-xl bg-[#14532D] hover:bg-[#0f3d21] text-white font-bold text-xs shadow-xs transition duration-150"
+                  className="px-5 py-2.5 rounded-full bg-[#123C2D] hover:bg-[#16865B] text-white font-heading font-bold text-xs shadow-md shadow-[#123C2D]/15 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200"
                 >
                   Get Started
                 </Link>
@@ -326,57 +363,46 @@ export const Navbar = () => {
 
           {/* Mobile Right Quick Action & Hamburger */}
           <div className="flex lg:hidden items-center gap-2">
-            {/* Active Role Indicator Pill on mobile */}
             {user ? (
               <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold font-heading border shadow-2xs ${
                 user.role === 'donor'
-                  ? 'bg-[#FFFBEB] text-[#92400E] border-amber-300/80'
+                  ? 'bg-[#FEF7EC] text-[#9A6217] border-[#E9A23B]/30'
                   : user.role === 'receiver'
-                  ? 'bg-[#ECFDF5] text-[#14532D] border-[#16A34A]/30'
+                  ? 'bg-[#E8F5ED] text-[#123C2D] border-[#16865B]/30'
                   : 'bg-purple-50 text-purple-800 border-purple-200'
               }`}>
                 <span className={`w-1.5 h-1.5 rounded-full ${
-                  user.role === 'donor' ? 'bg-[#F59E0B]' : user.role === 'receiver' ? 'bg-[#16A34A]' : 'bg-purple-600'
+                  user.role === 'donor' ? 'bg-[#E9A23B]' : user.role === 'receiver' ? 'bg-[#16865B]' : 'bg-purple-600'
                 }`} />
                 <span className="capitalize">{user.role}</span>
               </span>
             ) : (
-              <button
-                type="button"
-                onClick={() => handleQuickSwitch('receiver')}
-                className="px-2.5 py-1 rounded-full text-[11px] font-bold font-heading bg-[#ECFDF5] text-[#14532D] border border-[#16A34A]/30 shadow-2xs"
+              <Link
+                to="/login"
+                className="px-2.5 py-1 rounded-full text-[11px] font-bold font-heading bg-[#E8F5ED] text-[#123C2D] border border-[#16865B]/30 shadow-2xs"
               >
-                ⚡ Demo
-              </button>
+                Sign In
+              </Link>
             )}
 
             {user && (
               <button
                 type="button"
                 onClick={handleOpenNotifications}
-                className="relative p-1.5 rounded-xl text-gray-500 hover:text-[#14532D] hover:bg-[#ECFDF5] transition"
+                className="relative p-1.5 rounded-full text-[#718078] hover:text-[#123C2D] hover:bg-[#E8F5ED] transition"
               >
                 <Bell className="w-5 h-5" />
                 {unreadCount > 0 && (
-                  <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-[#16A34A]" />
+                  <span className="absolute top-0.5 right-0.5 w-2 h-2 rounded-full bg-[#16865B]" />
                 )}
               </button>
             )}
 
             <button
-              type="button"
-              onClick={toggleDashboardPanel}
-              className="p-1.5 rounded-xl text-[#064E3B] bg-emerald-50 hover:bg-emerald-100 border border-emerald-200/80 transition cursor-pointer"
-              title="Open Dashboard Side Panel"
-            >
-              <LayoutDashboard className="w-4.5 h-4.5 text-[#059669]" />
-            </button>
-
-            <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-2 rounded-xl text-gray-600 hover:text-[#14532D] hover:bg-gray-100 transition cursor-pointer"
+              className="p-2 rounded-xl text-[#202B25] hover:text-[#123C2D] hover:bg-[#E8F5ED] transition cursor-pointer"
             >
-              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6 text-[#123C2D]" />}
             </button>
           </div>
         </div>
@@ -384,38 +410,53 @@ export const Navbar = () => {
 
       {/* Mobile Drawer */}
       {mobileMenuOpen && (
-        <div className="lg:hidden border-t border-gray-100 bg-white/98 backdrop-blur-xl px-4 pt-3 pb-6 space-y-4 animate-fade-in text-sm font-medium shadow-xl">
-          {/* Dashboard Side Panel Trigger in Drawer */}
-          <button
-            type="button"
-            onClick={() => {
-              setMobileMenuOpen(false);
-              toggleDashboardPanel();
-            }}
-            className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-emerald-50 via-teal-50 to-emerald-50 border border-emerald-200/80 text-[#064E3B] font-heading font-extrabold text-xs flex items-center justify-center gap-2 shadow-2xs cursor-pointer hover:bg-emerald-100 transition"
-          >
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+        <div className="lg:hidden border-t border-[#123C2D]/8 bg-white/98 backdrop-blur-xl px-4 pt-3 pb-6 space-y-4 animate-fade-in text-sm font-medium shadow-xl">
+          {/* Mobile Language Selector */}
+          <div className="flex items-center justify-between p-2.5 bg-[#F8FAF7] rounded-2xl border border-[#123C2D]/8">
+            <span className="text-xs font-heading font-bold text-[#123C2D] flex items-center gap-1.5">
+              <Globe className="w-3.5 h-3.5 text-[#16865B]" />
+              <span>Language / ಭಾಷೆ:</span>
             </span>
-            <LayoutDashboard className="w-4 h-4 text-[#059669]" />
-            <span>Open Dashboard Side Panel</span>
-          </button>
+            <div className="flex items-center gap-1 bg-white p-1 rounded-xl border border-gray-200">
+              <button
+                type="button"
+                onClick={() => setLanguage('en')}
+                className={`px-2.5 py-1 rounded-lg text-xs font-bold cursor-pointer transition ${language === 'en' ? 'bg-[#123C2D] text-white shadow-2xs' : 'text-[#718078]'}`}
+              >
+                EN
+              </button>
+              <button
+                type="button"
+                onClick={() => setLanguage('hi')}
+                className={`px-2.5 py-1 rounded-lg text-xs font-bold cursor-pointer transition ${language === 'hi' ? 'bg-[#123C2D] text-white shadow-2xs' : 'text-[#718078]'}`}
+              >
+                हिंदी
+              </button>
+              <button
+                type="button"
+                onClick={() => setLanguage('kn')}
+                className={`px-2.5 py-1 rounded-lg text-xs font-bold cursor-pointer transition ${language === 'kn' ? 'bg-[#123C2D] text-white shadow-2xs' : 'text-[#718078]'}`}
+              >
+                ಕನ್ನಡ
+              </button>
+            </div>
+          </div>
+
           {/* Active Persona Card in Drawer */}
           {user && (
-            <div className="p-3.5 bg-[#F8FAF7] rounded-2xl border border-gray-200/80 flex items-center justify-between">
+            <div className="p-3.5 bg-[#F8FAF7] rounded-2xl border border-[#123C2D]/10 flex items-center justify-between">
               <div>
-                <p className="text-[10px] font-mono font-bold uppercase tracking-wider text-gray-400">
-                  Active Evaluator Persona
+                <p className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#718078]">
+                  Signed In Account
                 </p>
-                <p className="font-heading font-extrabold text-gray-900 text-sm mt-0.5">
+                <p className="font-heading font-extrabold text-[#123C2D] text-sm mt-0.5">
                   {user.full_name}
                 </p>
-                <span className={`inline-block mt-1 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider ${
+                <span className={`inline-block mt-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
                   user.role === 'donor'
-                    ? 'bg-amber-100 text-amber-900'
+                    ? 'bg-[#FEF7EC] text-[#9A6217]'
                     : user.role === 'receiver'
-                    ? 'bg-emerald-100 text-emerald-900'
+                    ? 'bg-[#E8F5ED] text-[#123C2D]'
                     : 'bg-purple-100 text-purple-900'
                 }`}>
                   {user.role} Account
@@ -424,60 +465,54 @@ export const Navbar = () => {
               <Link
                 to={getDashboardPath()}
                 onClick={() => setMobileMenuOpen(false)}
-                className="px-3 py-1.5 bg-[#14532D] text-white rounded-xl text-xs font-bold font-heading shadow-xs"
+                className="px-3.5 py-1.5 bg-[#123C2D] text-white rounded-full text-xs font-bold font-heading shadow-xs"
               >
-                Go to Dashboard →
+                Dashboard →
               </Link>
             </div>
           )}
 
-          {/* Quick Role Switcher Buttons */}
-          <div className="p-3 bg-amber-50/70 border border-amber-200/80 rounded-2xl space-y-2">
-            <p className="text-[10px] font-mono font-bold uppercase tracking-wider text-amber-900">
-              ⚡ 1-Click Role Switcher
-            </p>
-            <div className="grid grid-cols-3 gap-2">
-              <button
-                onClick={() => {
-                  handleQuickSwitch('donor');
-                  setMobileMenuOpen(false);
-                }}
-                className={`py-2 px-2 rounded-xl text-xs font-heading font-bold text-center border transition cursor-pointer ${
-                  user?.role === 'donor'
-                    ? 'bg-[#14532D] text-white border-[#14532D]'
-                    : 'bg-white text-gray-800 border-amber-200 hover:bg-[#ECFDF5]'
-                }`}
-              >
-                Food Donor
-              </button>
-              <button
-                onClick={() => {
-                  handleQuickSwitch('receiver');
-                  setMobileMenuOpen(false);
-                }}
-                className={`py-2 px-2 rounded-xl text-xs font-heading font-bold text-center border transition cursor-pointer ${
-                  user?.role === 'receiver'
-                    ? 'bg-[#14532D] text-white border-[#14532D]'
-                    : 'bg-white text-gray-800 border-amber-200 hover:bg-[#ECFDF5]'
-                }`}
-              >
-                Receiver
-              </button>
-              <button
-                onClick={() => {
-                  handleQuickSwitch('admin');
-                  setMobileMenuOpen(false);
-                }}
-                className={`py-2 px-2 rounded-xl text-xs font-heading font-bold text-center border transition cursor-pointer ${
-                  user?.role === 'admin'
-                    ? 'bg-purple-800 text-white border-purple-800'
-                    : 'bg-white text-gray-800 border-amber-200 hover:bg-purple-50'
-                }`}
-              >
-                Admin
-              </button>
+          {/* Mobile Drawer Account Status / Demo for Guests */}
+          {user ? (
+            <div className="p-3 bg-[#E8F5ED] border border-[#16865B]/20 rounded-2xl space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#123C2D]">
+                  Signed In Account
+                </span>
+                <span className="text-[10px] font-mono bg-white text-[#123C2D] border border-[#16865B]/20 px-2 py-0.5 rounded font-bold uppercase">
+                  🔒 {user.role === 'donor' ? 'Food Donor' : 'Receiver'}
+                </span>
+              </div>
+              <p className="font-heading font-extrabold text-sm text-[#123C2D] truncate">{user.full_name}</p>
+              <p className="text-[11px] font-mono text-[#718078] truncate">{user.email}</p>
             </div>
-          </div>
+          ) : (
+            <div className="p-3 bg-[#FEF7EC] border border-[#E9A23B]/30 rounded-2xl space-y-2">
+              <p className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#9A6217]">
+                ⚡ Quick Demo Accounts
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  onClick={() => {
+                    handleQuickSwitch('donor');
+                    setMobileMenuOpen(false);
+                  }}
+                  className="py-2 px-2 rounded-xl text-xs font-heading font-bold text-center border bg-white text-[#202B25] border-[#E9A23B]/30 hover:bg-[#E8F5ED] transition cursor-pointer"
+                >
+                  Food Donor
+                </button>
+                <button
+                  onClick={() => {
+                    handleQuickSwitch('receiver');
+                    setMobileMenuOpen(false);
+                  }}
+                  className="py-2 px-2 rounded-xl text-xs font-heading font-bold text-center border bg-white text-[#202B25] border-[#E9A23B]/30 hover:bg-[#E8F5ED] transition cursor-pointer"
+                >
+                  Receiver
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Nav Links */}
           <div className="space-y-1">
@@ -486,10 +521,10 @@ export const Navbar = () => {
                 key={link.name}
                 to={link.path}
                 onClick={() => setMobileMenuOpen(false)}
-                className={`block px-3.5 py-2.5 rounded-xl font-heading text-xs font-bold transition ${
+                className={`block px-4 py-2.5 rounded-xl font-heading text-xs font-bold transition ${
                   location.pathname === link.path
-                    ? 'bg-[#ECFDF5] text-[#14532D]'
-                    : 'text-gray-700 hover:bg-gray-50'
+                    ? 'bg-[#E8F5ED] text-[#123C2D]'
+                    : 'text-[#718078] hover:bg-[#F8FAF7] hover:text-[#123C2D]'
                 }`}
               >
                 {link.name}
@@ -503,7 +538,7 @@ export const Navbar = () => {
                 <Link
                   to={getDashboardPath()}
                   onClick={() => setMobileMenuOpen(false)}
-                  className="font-heading font-bold text-xs text-[#14532D]"
+                  className="font-heading font-bold text-xs text-[#123C2D]"
                 >
                   View My Dashboard
                 </Link>
@@ -522,14 +557,14 @@ export const Navbar = () => {
                 <Link
                   to="/login"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="flex-1 py-2.5 text-center rounded-xl border border-gray-200 text-gray-800 font-heading font-bold text-xs"
+                  className="flex-1 py-2.5 text-center rounded-full border border-[#123C2D]/15 text-[#202B25] font-heading font-bold text-xs"
                 >
                   Sign In
                 </Link>
                 <Link
                   to="/register"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="flex-1 py-2.5 text-center rounded-xl bg-[#14532D] text-white font-heading font-bold text-xs shadow-xs"
+                  className="flex-1 py-2.5 text-center rounded-full bg-[#123C2D] text-white font-heading font-bold text-xs shadow-md shadow-[#123C2D]/15"
                 >
                   Get Started
                 </Link>

@@ -71,12 +71,16 @@ export const AuthProvider = ({ children }) => {
   };
 
   const quickLogin = async (role) => {
+    if (user) {
+      showToast(`Active session in progress as ${user.role.toUpperCase()}. Direct role switching is prohibited. Please sign out first.`, 'error');
+      return null;
+    }
     try {
       const data = await api.quickLogin(role);
       localStorage.setItem('foodbridge_token', data.access_token);
       setToken(data.access_token);
       setUser(data.user);
-      showToast(`Switched demo account: ${data.user.full_name} (${role.toUpperCase()})`, 'success');
+      showToast(`Loaded demo ${role.toUpperCase()}: ${data.user.full_name}`, 'success');
       return data.user;
     } catch (err) {
       showToast(err.message || 'Demo login failed', 'error');
@@ -90,6 +94,20 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
     setUnreadCount(0);
     showToast('Logged out successfully', 'info');
+  };
+
+  const deleteAccount = async () => {
+    try {
+      await api.deleteMyAccount();
+      localStorage.removeItem('foodbridge_token');
+      setToken(null);
+      setUser(null);
+      setUnreadCount(0);
+      showToast('Your account has been permanently deleted.', 'info');
+    } catch (err) {
+      showToast(err.message || 'Failed to delete account', 'error');
+      throw err;
+    }
   };
 
   return (
@@ -107,6 +125,7 @@ export const AuthProvider = ({ children }) => {
         register,
         quickLogin,
         logout,
+        deleteAccount,
         showToast,
         fetchUnreadCount,
       }}

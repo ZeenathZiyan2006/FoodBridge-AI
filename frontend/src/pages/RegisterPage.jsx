@@ -1,6 +1,19 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Sparkles, Utensils, HeartHandshake, ArrowRight, AlertCircle, Check, Eye, EyeOff, Lock, Mail } from 'lucide-react';
+import {
+  Sparkles,
+  Utensils,
+  HeartHandshake,
+  ArrowRight,
+  AlertCircle,
+  Mail,
+  Leaf,
+  ShieldCheck,
+  Building2,
+  Phone,
+  MapPin,
+  CheckCircle2
+} from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 export const RegisterPage = () => {
@@ -10,12 +23,10 @@ export const RegisterPage = () => {
   const [role, setRole] = useState('donor'); // 'donor' or 'receiver'
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
 
   // Common Fields
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [phone, setPhone] = useState('');
   const [locationName, setLocationName] = useState('Manipal');
   const [address, setAddress] = useState('');
@@ -28,6 +39,7 @@ export const RegisterPage = () => {
 
   // Receiver-Specific Fields
   const [orgName, setOrgName] = useState('');
+  const [organizationId, setOrganizationId] = useState('');
   const [orgTypeReceiver, setOrgTypeReceiver] = useState('NGO');
   const [contactPerson, setContactPerson] = useState('');
   const [requiredCapacity, setRequiredCapacity] = useState(40);
@@ -39,10 +51,16 @@ export const RegisterPage = () => {
     setLoading(true);
 
     try {
+      if (role === 'receiver' && (!organizationId || !organizationId.trim())) {
+        setError('Official Organization ID / NGO Registration Number is compulsory for receivers.');
+        setLoading(false);
+        return;
+      }
+
       const payload = {
         full_name: fullName,
-        email,
-        password,
+        email: email.trim().toLowerCase(),
+        password: 'password123', // Automatically assigned standard default password for email sign-in
         role,
         phone,
         location_name: locationName,
@@ -56,6 +74,7 @@ export const RegisterPage = () => {
             }
           : {
               organization_name: orgName || fullName,
+              organization_id: organizationId.trim(),
               organization_type: orgTypeReceiver,
               contact_person: contactPerson || fullName,
               required_capacity_meals: parseInt(requiredCapacity) || 40,
@@ -74,324 +93,409 @@ export const RegisterPage = () => {
   };
 
   return (
-    <div className="min-h-[85vh] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-2xl w-full space-y-7 bg-white p-8 sm:p-10 rounded-2xl border border-gray-200/80 shadow-lg shadow-gray-200/40">
-        {/* Header */}
-        <div className="text-center space-y-2">
-          <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-[#14532D] text-white shadow-md shadow-[#14532D]/20 mb-2">
-            <Sparkles className="w-6 h-6 text-emerald-300" />
-          </div>
-          <h2 className="font-heading text-2xl font-extrabold text-gray-900 tracking-tight">
-            Register on FoodBridge AI
-          </h2>
-          <p className="text-xs text-gray-500">
-            Join the smart food redistribution network for sustainability and zero food waste.
-          </p>
-        </div>
+    <div className="min-h-[90vh] flex items-center justify-center p-4 sm:p-6 lg:p-10 animate-fade-in font-sans">
+      <div className="w-full max-w-5xl bg-white rounded-3xl border border-[#123C2D]/10 shadow-2xl overflow-hidden grid grid-cols-1 lg:grid-cols-12">
+        {/* Left Side: Brand & Community Impact Showcase */}
+        <div className="lg:col-span-5 bg-gradient-to-br from-[#123C2D] via-[#16865B] to-[#0B261D] p-8 sm:p-10 text-white flex flex-col justify-between relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-[#42B883]/15 rounded-full blur-3xl pointer-events-none" />
 
-        {/* Role Selector Tabs */}
-        <div className="grid grid-cols-2 gap-2 p-1.5 bg-gray-100/80 rounded-xl border border-gray-200/60">
-          <button
-            type="button"
-            onClick={() => setRole('donor')}
-            className={`py-2.5 px-4 rounded-lg text-xs font-heading font-bold transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer ${
-              role === 'donor'
-                ? 'bg-white text-[#14532D] shadow-xs'
-                : 'text-gray-500 hover:text-gray-900'
-            }`}
-          >
-            <Utensils className="w-4 h-4 text-[#14532D]" />
-            <span>I am a Food Donor</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setRole('receiver')}
-            className={`py-2.5 px-4 rounded-lg text-xs font-heading font-bold transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer ${
-              role === 'receiver'
-                ? 'bg-white text-[#14532D] shadow-xs'
-                : 'text-gray-500 hover:text-gray-900'
-            }`}
-          >
-            <HeartHandshake className="w-4 h-4 text-teal-700" />
-            <span>I am a Food Receiver (NGO/Shelter)</span>
-          </button>
-        </div>
-
-        {error && (
-          <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-800 text-xs font-medium flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
-            <span>{error}</span>
-          </div>
-        )}
-
-        {/* Registration Form with autocomplete disabled to prevent Windows Security PIN prompt */}
-        <form onSubmit={handleSubmit} autoComplete="off" className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1 font-heading">
-                {role === 'donor' ? 'Donor / Contact Name *' : 'Account Manager Name *'}
-              </label>
-              <input
-                type="text"
-                required
-                autoComplete="off"
-                name="foodbridge_contact_name"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                placeholder="e.g. Ramesh Hegde"
-                className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-hidden focus:ring-2 focus:ring-[#16A34A]/20 focus:border-[#16A34A] transition"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1 font-heading">
-                Email Address *
-              </label>
-              <input
-                type="email"
-                required
-                autoComplete="off"
-                name="foodbridge_user_email"
-                data-lpignore="true"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="contact@example.org"
-                className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-hidden focus:ring-2 focus:ring-[#16A34A]/20 focus:border-[#16A34A] transition"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1 font-heading">
-                Password *
-              </label>
-              <div className="relative">
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  required
-                  autoComplete="new-password"
-                  name="foodbridge_user_pwd"
-                  data-lpignore="true"
-                  data-form-type="other"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Minimum 6 characters"
-                  className="w-full pl-3.5 pr-10 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-hidden focus:ring-2 focus:ring-[#16A34A]/20 focus:border-[#16A34A] transition"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 cursor-pointer"
-                  title={showPassword ? 'Hide password' : 'Show password'}
-                >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
+          <div className="relative space-y-6">
+            <div className="flex items-center gap-3">
+              <div className="w-11 h-11 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center shadow-inner">
+                <Leaf className="w-6 h-6 text-[#E8F5ED]" />
+              </div>
+              <div>
+                <span className="font-heading text-xl font-extrabold tracking-tight text-white flex items-center gap-2">
+                  FoodBridge <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#E8F5ED]/20 text-[#E8F5ED] border border-white/30">AI</span>
+                </span>
+                <p className="text-[11px] text-[#E8F5ED]/80 font-medium">
+                  Join the Zero Food Waste Movement
+                </p>
               </div>
             </div>
 
-            <div>
-              <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1 font-heading">
-                Phone Number *
-              </label>
-              <input
-                type="tel"
-                required
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="+91 98450 12345"
-                className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-hidden focus:ring-2 focus:ring-[#16A34A]/20 focus:border-[#16A34A] transition"
-              />
+            <div className="space-y-3 pt-4">
+              <h2 className="font-heading text-2xl sm:text-3xl font-extrabold text-white leading-snug">
+                One Platform.<br />
+                <span className="text-[#42B883]">Two Vital Roles.</span>
+              </h2>
+              <p className="text-xs sm:text-sm text-[#E8F5ED]/85 leading-relaxed">
+                Connect your organization to real-time redistribution logistics. Eliminate food waste and deliver wholesome meals where they are needed most.
+              </p>
+            </div>
+
+            <div className="space-y-4 pt-2">
+              <div className="p-4 rounded-2xl bg-white/10 backdrop-blur-md border border-white/15 space-y-1">
+                <div className="flex items-center gap-2 text-white font-heading font-bold text-xs">
+                  <Utensils className="w-4 h-4 text-[#42B883]" />
+                  <span>For Food Donors</span>
+                </div>
+                <p className="text-[11px] text-[#E8F5ED]/80 leading-relaxed">
+                  List surplus batches within 60 seconds. Our AI algorithm finds the closest shelter to prevent spoilage.
+                </p>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-white/10 backdrop-blur-md border border-white/15 space-y-1">
+                <div className="flex items-center gap-2 text-white font-heading font-bold text-xs">
+                  <HeartHandshake className="w-4 h-4 text-[#E9A23B]" />
+                  <span>For Food Receivers</span>
+                </div>
+                <p className="text-[11px] text-[#E8F5ED]/80 leading-relaxed">
+                  Browse edible surplus tailored to your capacity, request meals, and coordinate volunteer van pickups.
+                </p>
+              </div>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="relative pt-6 border-t border-white/10 text-[11px] text-[#E8F5ED]/60 flex items-center justify-between">
+            <span>FSSAI Hygiene Standards</span>
+            <span className="font-mono text-[#42B883] font-bold">100% Verified</span>
+          </div>
+        </div>
+
+        {/* Right Side: Registration Form */}
+        <div className="lg:col-span-7 p-6 sm:p-10 lg:p-12 flex flex-col justify-center bg-white">
+          <div className="max-w-xl w-full mx-auto space-y-6">
             <div>
-              <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1 font-heading">
-                City / Locality *
-              </label>
-              <select
-                value={locationName}
-                onChange={(e) => setLocationName(e.target.value)}
-                className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-hidden focus:ring-2 focus:ring-[#16A34A]/20 focus:border-[#16A34A] bg-white transition"
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#E8F5ED] text-[#123C2D] text-[11px] font-heading font-extrabold border border-[#16865B]/20 mb-2">
+                <Sparkles className="w-3 h-3 text-[#16865B]" />
+                <span>Account Registration</span>
+              </div>
+              <h1 className="font-heading text-2xl sm:text-3xl font-extrabold text-[#123C2D] tracking-tight">
+                Create Your Account
+              </h1>
+              <p className="text-xs text-[#718078] mt-1">
+                Choose your role to configure your verified organization profile.
+              </p>
+            </div>
+
+            {/* Role Selection Tabs (Only 2 Roles: Donor and Receiver) */}
+            <div className="grid grid-cols-2 p-1.5 bg-[#F8FAF7] rounded-full border border-[#123C2D]/8">
+              <button
+                type="button"
+                onClick={() => setRole('donor')}
+                className={`py-2.5 px-4 rounded-full text-xs font-heading font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                  role === 'donor'
+                    ? 'bg-[#123C2D] text-white shadow-xs'
+                    : 'text-[#718078] hover:text-[#123C2D]'
+                }`}
               >
-                <option value="Manipal">Manipal</option>
-                <option value="Udupi">Udupi</option>
-                <option value="Santhekatte">Santhekatte</option>
-                <option value="Malpe">Malpe</option>
-                <option value="Brahmavar">Brahmavar</option>
-                <option value="Karkala">Karkala</option>
-                <option value="Mangalore">Mangalore</option>
-              </select>
+                <Utensils className="w-4 h-4" />
+                <span>Food Donor</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setRole('receiver')}
+                className={`py-2.5 px-4 rounded-full text-xs font-heading font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                  role === 'receiver'
+                    ? 'bg-[#123C2D] text-white shadow-xs'
+                    : 'text-[#718078] hover:text-[#123C2D]'
+                }`}
+              >
+                <HeartHandshake className="w-4 h-4" />
+                <span>Food Receiver (Shelter)</span>
+              </button>
             </div>
 
-            <div>
-              <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1 font-heading">
-                Complete Street Address *
-              </label>
-              <input
-                type="text"
-                required
-                value={address}
-                onChange={(e) => setAddress(e.target.value)}
-                placeholder="Street, Landmark, Building"
-                className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-hidden focus:ring-2 focus:ring-[#16A34A]/20 focus:border-[#16A34A] transition"
-              />
-            </div>
-          </div>
+            {error && (
+              <div className="p-4 bg-rose-50 border border-rose-200 rounded-2xl text-rose-800 text-xs font-medium flex items-start gap-2.5 animate-fade-in">
+                <AlertCircle className="w-4 h-4 shrink-0 text-rose-600 mt-0.5" />
+                <div className="space-y-1">
+                  <p className="font-bold">{error}</p>
+                  {error.includes('Cannot connect') && (
+                    <p className="text-[11px] text-rose-700 font-mono bg-white p-2 rounded-lg border border-rose-200">
+                      💡 Tip: Run <code>python -m uvicorn app.main:app --reload --port 8000</code> in your terminal.
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
 
-          {/* Conditional Donor Fields */}
-          {role === 'donor' && (
-            <div className="space-y-4 pt-3 border-t border-gray-100">
-              <h4 className="font-heading text-xs font-bold text-[#14532D] uppercase tracking-wider">
-                Donor Profile Specifications
-              </h4>
-
+            <form
+              onSubmit={handleSubmit}
+              autoComplete="off"
+              noValidate
+              data-lpignore="true"
+              data-form-type="other"
+              className="space-y-4"
+            >
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1 font-heading">
-                    Organization Type
-                  </label>
-                  <select
-                    value={orgTypeDonor}
-                    onChange={(e) => setOrgTypeDonor(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-hidden focus:ring-2 focus:ring-[#16A34A]/20 focus:border-[#16A34A] bg-white transition"
-                  >
-                    <option value="Restaurant">Restaurant</option>
-                    <option value="College Canteen">College Canteen</option>
-                    <option value="Hotel">Hotel</option>
-                    <option value="Hostel">Hostel Mess</option>
-                    <option value="Event Organizer">Event Organizer / Caterer</option>
-                    <option value="Supermarket">Supermarket</option>
-                    <option value="Other">Other</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1 font-heading">
-                    FSSAI License / Registration No.
+                  <label className="block text-xs font-heading font-bold text-[#202B25] uppercase tracking-wider mb-1.5">
+                    {role === 'donor' ? 'Donor / Contact Name *' : 'Manager Name *'}
                   </label>
                   <input
                     type="text"
-                    value={fssaiLicense}
-                    onChange={(e) => setFssaiLicense(e.target.value)}
-                    placeholder="e.g. FSSAI-11223344556677"
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-hidden focus:ring-2 focus:ring-[#16A34A]/20 focus:border-[#16A34A] transition"
+                    required
+                    name="fb_contact_name_field"
+                    autoComplete="new-off"
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    spellCheck="false"
+                    data-lpignore="true"
+                    data-form-type="other"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    placeholder="e.g. Ramesh Hegde"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-[#123C2D]/12 text-xs sm:text-sm focus:outline-hidden focus:ring-2 focus:ring-[#16865B]/25 focus:border-[#16865B] bg-[#F8FAF7]/50"
                   />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-heading font-bold text-[#202B25] uppercase tracking-wider mb-1.5">
+                    Email Address *
+                  </label>
+                  <input
+                    type="text"
+                    inputMode="email"
+                    required
+                    name="fb_org_contact_email_addr"
+                    autoComplete="new-off"
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    spellCheck="false"
+                    data-lpignore="true"
+                    data-form-type="other"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="contact@example.org"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-[#123C2D]/12 text-xs sm:text-sm focus:outline-hidden focus:ring-2 focus:ring-[#16865B]/25 focus:border-[#16865B] bg-[#F8FAF7]/50"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-heading font-bold text-[#202B25] uppercase tracking-wider mb-1.5">
+                    Phone Number *
+                  </label>
+                  <input
+                    type="text"
+                    inputMode="tel"
+                    required
+                    name="fb_contact_tele_num"
+                    autoComplete="new-off"
+                    data-lpignore="true"
+                    data-form-type="other"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="+91 98450 12345"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-[#123C2D]/12 text-xs sm:text-sm focus:outline-hidden focus:ring-2 focus:ring-[#16865B]/25 focus:border-[#16865B] bg-[#F8FAF7]/50"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-heading font-bold text-[#202B25] uppercase tracking-wider mb-1.5">
+                    City / Locality *
+                  </label>
+                  <select
+                    value={locationName}
+                    name="fb_select_locality"
+                    autoComplete="new-off"
+                    onChange={(e) => setLocationName(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-[#123C2D]/12 text-xs sm:text-sm focus:outline-hidden focus:ring-2 focus:ring-[#16865B]/25 focus:border-[#16865B] bg-[#F8FAF7]/50 cursor-pointer"
+                  >
+                    <option value="Manipal">Manipal</option>
+                    <option value="Udupi">Udupi</option>
+                    <option value="Santhekatte">Santhekatte</option>
+                    <option value="Malpe">Malpe</option>
+                    <option value="Brahmavar">Brahmavar</option>
+                    <option value="Karkala">Karkala</option>
+                  </select>
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1 font-heading">
-                  Operating Hours
+                <label className="block text-xs font-heading font-bold text-[#202B25] uppercase tracking-wider mb-1.5">
+                  Address / Landmark *
                 </label>
                 <input
                   type="text"
-                  value={operatingHours}
-                  onChange={(e) => setOperatingHours(e.target.value)}
-                  placeholder="e.g. 8:00 AM - 10:30 PM"
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-hidden focus:ring-2 focus:ring-[#16A34A]/20 focus:border-[#16A34A] transition"
+                  required
+                  name="fb_street_landmark_addr"
+                  autoComplete="new-off"
+                  data-lpignore="true"
+                  data-form-type="other"
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
+                  placeholder="Street, Building, Landmark"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-[#123C2D]/12 text-xs sm:text-sm focus:outline-hidden focus:ring-2 focus:ring-[#16865B]/25 focus:border-[#16865B] bg-[#F8FAF7]/50"
                 />
               </div>
-            </div>
-          )}
 
-          {/* Conditional Receiver Fields */}
-          {role === 'receiver' && (
-            <div className="space-y-4 pt-3 border-t border-gray-100">
-              <h4 className="font-heading text-xs font-bold text-[#14532D] uppercase tracking-wider">
-                Receiver Organization Details
-              </h4>
+              {/* Conditional Donor Fields */}
+              {role === 'donor' && (
+                <div className="space-y-4 pt-3 border-t border-[#123C2D]/8">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-heading font-bold text-[#202B25] uppercase tracking-wider mb-1.5">
+                        Kitchen / Establishment Type
+                      </label>
+                      <select
+                        value={orgTypeDonor}
+                        name="fb_donor_estab_type"
+                        onChange={(e) => setOrgTypeDonor(e.target.value)}
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-[#123C2D]/12 text-xs sm:text-sm bg-[#F8FAF7]/50 cursor-pointer"
+                      >
+                        <option value="Restaurant">Restaurant</option>
+                        <option value="College Canteen">College Canteen</option>
+                        <option value="Hostel Mess">Hostel Mess</option>
+                        <option value="Hotel Banquet">Hotel Banquet</option>
+                        <option value="Corporate Cafeteria">Corporate Cafeteria</option>
+                        <option value="Bakery">Bakery</option>
+                      </select>
+                    </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1 font-heading">
-                    Organization / Shelter Name *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={orgName}
-                    onChange={(e) => setOrgName(e.target.value)}
-                    placeholder="e.g. Hope Children's Home"
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-hidden focus:ring-2 focus:ring-[#16A34A]/20 focus:border-[#16A34A] transition"
-                  />
+                    <div>
+                      <label className="block text-xs font-heading font-bold text-[#202B25] uppercase tracking-wider mb-1.5">
+                        FSSAI License / Registration No.
+                      </label>
+                      <input
+                        type="text"
+                        name="fb_fssai_lic_reg_val"
+                        autoComplete="new-off"
+                        data-lpignore="true"
+                        data-form-type="other"
+                        value={fssaiLicense}
+                        onChange={(e) => setFssaiLicense(e.target.value)}
+                        placeholder="e.g. 11223344556677"
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-[#123C2D]/12 text-xs sm:text-sm bg-[#F8FAF7]/50"
+                      />
+                    </div>
+                  </div>
                 </div>
+              )}
 
-                <div>
-                  <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1 font-heading">
-                    Organization Type
-                  </label>
-                  <select
-                    value={orgTypeReceiver}
-                    onChange={(e) => setOrgTypeReceiver(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-hidden focus:ring-2 focus:ring-[#16A34A]/20 focus:border-[#16A34A] bg-white transition"
-                  >
-                    <option value="NGO">Registered NGO</option>
-                    <option value="Orphanage">Orphanage / Children's Home</option>
-                    <option value="Shelter">Destitute Shelter</option>
-                    <option value="Community Kitchen">Community Soup Kitchen</option>
-                    <option value="Food Bank">Food Bank</option>
-                    <option value="Old Age Home">Old Age Home</option>
-                  </select>
+              {/* Conditional Receiver Fields */}
+              {role === 'receiver' && (
+                <div className="space-y-4 pt-3 border-t border-[#123C2D]/8">
+                  {/* Mandatory Organization ID */}
+                  <div>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label className="block text-xs font-heading font-bold text-[#123C2D] uppercase tracking-wider flex items-center gap-1.5">
+                        <ShieldCheck className="w-4 h-4 text-[#16865B]" />
+                        <span>Organization ID / NGO Reg No. * (Compulsory)</span>
+                      </label>
+                      <span className="text-[10px] font-mono font-bold text-[#16865B] bg-[#E8F5ED] px-2.5 py-0.5 rounded-full border border-[#16865B]/20">
+                        Statutory Check
+                      </span>
+                    </div>
+                    <input
+                      type="text"
+                      required
+                      name="fb_receiver_org_id_compulsory"
+                      autoComplete="new-off"
+                      data-lpignore="true"
+                      data-form-type="other"
+                      value={organizationId}
+                      onChange={(e) => setOrganizationId(e.target.value)}
+                      placeholder="e.g. NGO-KA-2024-8921 or DARPAN-ID"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-[#16865B]/30 text-xs sm:text-sm bg-[#E8F5ED]/20 font-mono focus:ring-2 focus:ring-[#16865B]"
+                    />
+                    <p className="text-[11px] text-[#718078] mt-1">
+                      Mandatory registration number to verify legitimate NGO / shelter status before receiving food allocations.
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-heading font-bold text-[#202B25] uppercase tracking-wider mb-1.5">
+                        Organization / Shelter Name *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        name="fb_receiver_org_name_val"
+                        autoComplete="new-off"
+                        data-lpignore="true"
+                        data-form-type="other"
+                        value={orgName}
+                        onChange={(e) => setOrgName(e.target.value)}
+                        placeholder="e.g. Hope Children's Home"
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-[#123C2D]/12 text-xs sm:text-sm bg-[#F8FAF7]/50"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-heading font-bold text-[#202B25] uppercase tracking-wider mb-1.5">
+                        Organization Type
+                      </label>
+                      <select
+                        value={orgTypeReceiver}
+                        name="fb_receiver_type_sel"
+                        onChange={(e) => setOrgTypeReceiver(e.target.value)}
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-[#123C2D]/12 text-xs sm:text-sm bg-[#F8FAF7]/50 cursor-pointer"
+                      >
+                        <option value="NGO">NGO</option>
+                        <option value="Orphanage">Orphanage</option>
+                        <option value="Elderly Care Home">Elderly Care Home</option>
+                        <option value="Community Shelter">Community Shelter</option>
+                        <option value="Rehabilitation Center">Rehabilitation Center</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-heading font-bold text-[#202B25] uppercase tracking-wider mb-1.5">
+                        Meal Intake Capacity (Beneficiaries)
+                      </label>
+                      <input
+                        type="number"
+                        min="5"
+                        max="500"
+                        name="fb_receiver_cap_num"
+                        autoComplete="new-off"
+                        data-lpignore="true"
+                        value={requiredCapacity}
+                        onChange={(e) => setRequiredCapacity(e.target.value)}
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-[#123C2D]/12 text-xs sm:text-sm bg-[#F8FAF7]/50 font-mono"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-heading font-bold text-[#202B25] uppercase tracking-wider mb-1.5">
+                        Dietary Intake Preference
+                      </label>
+                      <select
+                        value={dietaryPreference}
+                        name="fb_receiver_diet_sel"
+                        onChange={(e) => setDietaryPreference(e.target.value)}
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-[#123C2D]/12 text-xs sm:text-sm bg-[#F8FAF7]/50 cursor-pointer"
+                      >
+                        <option value="Vegetarian">Strict Vegetarian</option>
+                        <option value="Both">Both Veg & Non-Veg</option>
+                        <option value="Vegan">Vegan</option>
+                      </select>
+                    </div>
+                  </div>
                 </div>
+              )}
+
+              {/* Password notice card */}
+              <div className="p-3 bg-[#E8F5ED]/80 border border-[#16865B]/20 rounded-2xl text-[#123C2D] text-xs flex items-center gap-2.5">
+                <ShieldCheck className="w-4 h-4 text-[#16865B] shrink-0" />
+                <p className="leading-snug">
+                  <strong>Password-Free Registration:</strong> No password entry required here. Sign in later on the Login page using your email and default password <code className="font-mono font-bold bg-white px-1.5 py-0.5 rounded border border-[#16865B]/30 text-[#123C2D]">password123</code>.
+                </p>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1 font-heading">
-                    Required Daily Meal Capacity *
-                  </label>
-                  <input
-                    type="number"
-                    min="5"
-                    max="500"
-                    required
-                    value={requiredCapacity}
-                    onChange={(e) => setRequiredCapacity(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-hidden focus:ring-2 focus:ring-[#16A34A]/20 focus:border-[#16A34A] transition"
-                  />
-                  <p className="text-[11px] text-gray-400 mt-1">Used by AI algorithm for quantity compatibility.</p>
-                </div>
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full py-3.5 px-4 rounded-full bg-[#123C2D] hover:bg-[#16865B] text-white font-heading font-extrabold text-sm shadow-md shadow-[#123C2D]/20 hover:shadow-lg transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer active:scale-98 disabled:opacity-50 mt-2"
+              >
+                {loading ? 'Creating Account...' : `Register as ${role === 'donor' ? 'Food Donor' : 'Receiver Shelter'}`}
+                <ArrowRight className="w-4 h-4 text-[#E8F5ED]" />
+              </button>
+            </form>
 
-                <div>
-                  <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1 font-heading">
-                    Dietary Requirements *
-                  </label>
-                  <select
-                    value={dietaryPreference}
-                    onChange={(e) => setDietaryPreference(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-hidden focus:ring-2 focus:ring-[#16A34A]/20 focus:border-[#16A34A] bg-white transition"
-                  >
-                    <option value="Both">Both Vegetarian & Non-Vegetarian</option>
-                    <option value="Vegetarian">Strictly Vegetarian Only</option>
-                    <option value="Vegan">Vegan Only</option>
-                  </select>
-                </div>
-              </div>
+            <div className="text-center pt-4 border-t border-gray-100 text-xs text-[#718078]">
+              Already registered?{' '}
+              <Link to="/login" className="text-[#16865B] font-heading font-bold hover:underline">
+                Sign In to Your Dashboard →
+              </Link>
             </div>
-          )}
-
-          <div className="pt-2">
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-3 px-4 rounded-xl bg-[#14532D] hover:bg-[#166534] text-white font-heading font-bold text-sm shadow-md shadow-[#14532D]/20 transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer active:scale-95"
-            >
-              {loading ? 'Creating Account...' : `Register as ${role === 'donor' ? 'Food Donor' : 'Receiver'}`}
-              <ArrowRight className="w-4 h-4" />
-            </button>
           </div>
-        </form>
-
-        <div className="text-center pt-2 border-t border-gray-100">
-          <p className="text-xs text-gray-500">
-            Already registered?{' '}
-            <Link to="/login" className="font-heading font-bold text-[#14532D] hover:text-[#16A34A] transition">
-              Sign In here
-            </Link>
-          </p>
         </div>
       </div>
     </div>

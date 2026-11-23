@@ -7,7 +7,7 @@ export const ConfirmationModal = ({
   message,
   confirmText = 'Confirm',
   cancelText = 'Cancel',
-  confirmVariant = 'forest', // forest, rose, amber, blue
+  confirmVariant = 'forest', // forest, emerald, rose, amber, blue
   onConfirm,
   onCancel,
   isLoading = false,
@@ -15,22 +15,22 @@ export const ConfirmationModal = ({
   if (!isOpen) return null;
 
   const btnStyles = {
-    forest: 'bg-[#14532D] hover:bg-[#0f3d21] text-white',
-    emerald: 'bg-[#16A34A] hover:bg-[#15803D] text-white',
+    forest: 'bg-[#123C2D] hover:bg-[#16865B] text-white',
+    emerald: 'bg-[#16865B] hover:bg-[#123C2D] text-white',
     rose: 'bg-rose-600 hover:bg-rose-700 text-white',
-    amber: 'bg-[#F59E0B] hover:bg-amber-600 text-white',
+    amber: 'bg-[#E9A23B] hover:bg-amber-600 text-white',
     blue: 'bg-blue-600 hover:bg-blue-700 text-white',
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs animate-fade-in">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#202B25]/40 backdrop-blur-xs animate-fade-in font-sans">
       <div className="bg-white rounded-3xl max-w-md w-full p-6 sm:p-7 shadow-2xl border border-gray-100 transform transition-all">
         <div className="flex items-start justify-between mb-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-[#ECFDF5] flex items-center justify-center text-[#14532D]">
-              <AlertCircle className="w-5 h-5 text-[#16A34A]" />
+            <div className="w-10 h-10 rounded-2xl bg-[#E8F5ED] flex items-center justify-center text-[#123C2D]">
+              <AlertCircle className="w-5 h-5 text-[#16865B]" />
             </div>
-            <h3 className="font-heading text-base font-bold text-gray-900">{title}</h3>
+            <h3 className="font-heading text-base font-bold text-[#202B25]">{title}</h3>
           </div>
           <button
             onClick={onCancel}
@@ -41,7 +41,7 @@ export const ConfirmationModal = ({
           </button>
         </div>
 
-        <p className="text-xs text-gray-600 leading-relaxed mb-6">{message}</p>
+        <p className="text-xs text-[#718078] leading-relaxed mb-6">{message}</p>
 
         <div className="flex items-center justify-end gap-2.5">
           <button

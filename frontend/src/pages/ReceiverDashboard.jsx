@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   Search,
   Sparkles,
@@ -10,30 +10,38 @@ import {
   Package,
   Layers,
   ArrowRight,
-  AlertCircle
+  AlertCircle,
+  Truck,
+  CheckCircle2,
+  Utensils,
+  ChefHat,
+  Filter,
+  Trash2
 } from 'lucide-react';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { FoodCard } from '../components/FoodCard';
 import { StatusBadge } from '../components/StatusBadge';
 import { SafetyBanner } from '../components/SafetyBanner';
+import { ConfirmationModal } from '../components/ConfirmationModal';
 
 export const ReceiverDashboard = () => {
-  const { user, showToast } = useAuth();
+  const { user, deleteAccount, showToast } = useAuth();
+  const navigate = useNavigate();
 
-  const [activeTab, setActiveTab] = useState('browse'); // 'browse', 'personalized', 'my-requests'
+  const [activeTab, setActiveTab] = useState('personalized'); // 'personalized', 'browse', 'my-requests'
   const [donations, setDonations] = useState([]);
   const [personalizedFeed, setPersonalizedFeed] = useState([]);
   const [myRequests, setMyRequests] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [deleteAccountModalOpen, setDeleteAccountModalOpen] = useState(false);
+  const [deletingAccount, setDeletingAccount] = useState(false);
 
-  // Filters
+  // Filters for browse tab
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('All');
   const [dietaryFilter, setDietaryFilter] = useState('All');
   const [locationFilter, setLocationFilter] = useState('All');
-  const [urgencyFilter, setUrgencyFilter] = useState('All');
-  const [sortBy, setSortBy] = useState('newest'); // 'newest', 'urgency', 'quantity'
 
   // Request Food Modal
   const [selectedDonation, setSelectedDonation] = useState(null);
@@ -52,15 +60,16 @@ export const ReceiverDashboard = () => {
           dietary_type: dietaryFilter,
           location: locationFilter,
           search: searchTerm,
-          urgency: urgencyFilter,
-        }),
+          status: 'Available',
+          only_available: true,
+        }).catch(() => []),
         api.getMyRequests().catch(() => []),
         api.getReceiverFeed().catch(() => []),
       ]);
 
-      setDonations(allDonations);
-      setMyRequests(myReqs);
-      setPersonalizedFeed(feed);
+      setDonations(allDonations || []);
+      setMyRequests(myReqs || []);
+      setPersonalizedFeed(feed || []);
     } catch (err) {
       showToast(err.message || 'Failed to load food listings', 'error');
     } finally {
@@ -70,17 +79,14 @@ export const ReceiverDashboard = () => {
 
   useEffect(() => {
     loadData();
-  }, [categoryFilter, dietaryFilter, locationFilter, urgencyFilter]);
-
-  const handleSearchSubmit = (e) => {
-    e.preventDefault();
-    loadData();
-  };
+  }, [categoryFilter, dietaryFilter, locationFilter]);
 
   const handleOpenRequestModal = (donation) => {
     setSelectedDonation(donation);
-    setRequestQuantity(donation.quantity.toString());
-    setRequestMessage(`Requesting ${donation.quantity} ${donation.quantity_unit} for our community beneficiaries.`);
+    const avail = donation.remaining_quantity !== null && donation.remaining_quantity !== undefined ? donation.remaining_quantity : donation.quantity;
+    const initialInt = Math.max(1, Math.floor(avail));
+    setRequestQuantity(initialInt.toString());
+    setRequestMessage(`Requesting ${initialInt} ${donation.quantity_unit} for our community beneficiaries.`);
     setRequestError('');
     setRequestModalOpen(true);
   };
@@ -89,13 +95,14 @@ export const ReceiverDashboard = () => {
     e.preventDefault();
     setRequestError('');
 
-    const qty = parseFloat(requestQuantity);
-    if (!qty || qty <= 0) {
-      setRequestError('Requested quantity must be greater than zero.');
+    const qty = parseInt(requestQuantity, 10);
+    if (!qty || qty <= 0 || isNaN(qty)) {
+      setRequestError('Requested quantity must be a whole positive integer.');
       return;
     }
-    if (qty > selectedDonation.quantity) {
-      setRequestError(`Cannot request more than the available quantity (${selectedDonation.quantity} ${selectedDonation.quantity_unit}).`);
+    const avail = selectedDonation.remaining_quantity !== null && selectedDonation.remaining_quantity !== undefined ? selectedDonation.remaining_quantity : selectedDonation.quantity;
+    if (qty > avail) {
+      setRequestError(`Cannot request more than the remaining available quantity (${avail} ${selectedDonation.quantity_unit}).`);
       return;
     }
 
@@ -118,264 +125,263 @@ export const ReceiverDashboard = () => {
     }
   };
 
-  const sortedDonations = [...donations].sort((a, b) => {
-    if (sortBy === 'urgency') {
-      return (a.hours_left || 99) - (b.hours_left || 99);
+  const handleDeleteMyAccount = async () => {
+    setDeletingAccount(true);
+    try {
+      await deleteAccount();
+      navigate('/');
+    } catch (err) {
+      // Handled in auth context
+    } finally {
+      setDeletingAccount(false);
     }
-    if (sortBy === 'quantity') {
-      return b.quantity - a.quantity;
-    }
-    return new Date(b.created_at) - new Date(a.created_at);
-  });
+  };
+
+  // Metrics
+  const pendingRequestsCount = myRequests.filter((r) => r.status === 'Requested').length;
+  const acceptedPickupsCount = myRequests.filter((r) => ['Accepted', 'Ready for Pickup'].includes(r.status)).length;
+  const completedPickupsCount = myRequests.filter((r) => ['Collected', 'Completed'].includes(r.status)).length;
+  const totalMealsReceived = myRequests
+    .filter((r) => ['Collected', 'Completed'].includes(r.status))
+    .reduce((sum, r) => sum + (r.requested_quantity || 0), 0);
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-      {/* Top Banner */}
-      <div className="bg-white rounded-2xl p-6 sm:p-8 border border-gray-200/80 shadow-2xs flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10 space-y-8 animate-fade-in font-sans">
+      {/* 1. TOP WELCOME & PORTAL BANNER */}
+      <div className="bg-white rounded-3xl p-6 sm:p-8 border border-[#123C2D]/8 shadow-[0_4px_24px_-4px_rgba(18,60,45,0.04)] flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider bg-[#ECFDF5] text-[#14532D] border border-[#16A34A]/20">
+          <div className="flex flex-wrap items-center gap-2 mb-1.5">
+            <span className="px-3 py-0.5 rounded-full text-[11px] font-heading font-extrabold uppercase tracking-wider bg-[#E8F5ED] text-[#123C2D] border border-[#16865B]/20">
               Receiver Organization Portal
             </span>
-            <span className="text-xs text-gray-500 font-medium">
-              {user?.receiver_profile?.organization_type || 'NGO'} • Capacity: {user?.receiver_profile?.required_capacity_meals || 40} Meals
+            <span className="text-xs text-[#718078] font-medium">
+              {user?.receiver_profile?.organization_type || 'Shelter'} • Capacity: {user?.receiver_profile?.required_capacity_meals || 40} Meals
             </span>
+            {user?.receiver_profile?.organization_id && (
+              <span className="text-[11px] font-mono font-bold text-[#16865B] bg-[#E8F5ED] px-2.5 py-0.5 rounded-full border border-[#16865B]/30 inline-flex items-center gap-1">
+                <CheckCircle2 className="w-3 h-3 text-[#16865B]" /> Org ID: {user.receiver_profile.organization_id}
+              </span>
+            )}
           </div>
-          <h1 className="font-heading text-2xl sm:text-3xl font-extrabold text-gray-900">
+          <h1 className="font-heading text-2xl sm:text-3xl font-extrabold text-[#123C2D]">
             {user?.receiver_profile?.organization_name || user?.full_name || 'Receiver Shelter'}
           </h1>
-          <p className="text-xs sm:text-sm text-gray-500 mt-1">
-            Browse available food donations, check AI recommendations, and track active food collections.
+          <p className="text-xs sm:text-sm text-[#718078] mt-1 max-w-xl">
+            Review personalized AI recommendations, submit allocation requests for surplus meals, and coordinate volunteer pickups.
           </p>
         </div>
 
-        <Link
-          to="/matching"
-          className="px-5 py-3 rounded-xl bg-[#FFFBEB] hover:bg-[#FEF3C7] text-[#92400E] font-bold text-xs border border-[#F59E0B]/30 shadow-2xs transition flex items-center gap-2 shrink-0"
-        >
-          <Sparkles className="w-4 h-4 text-[#F59E0B]" />
-          <span>AI Matching Engine</span>
-        </Link>
+        <div className="flex flex-wrap items-center gap-3 shrink-0">
+          <Link
+            to="/matching"
+            className="px-6 py-3 rounded-full bg-[#FEF7EC] hover:bg-[#FDF0D9] text-[#9A6217] font-heading font-bold text-xs sm:text-sm border border-[#E9A23B]/35 shadow-2xs transition-all flex items-center gap-2 cursor-pointer"
+          >
+            <Sparkles className="w-4 h-4 text-[#E9A23B]" />
+            <span>AI Matching Simulator</span>
+          </Link>
+
+          <button
+            type="button"
+            onClick={() => setDeleteAccountModalOpen(true)}
+            className="px-4 py-3 rounded-full bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-heading font-bold text-xs sm:text-sm transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
+            title="Permanently delete your account"
+          >
+            <Trash2 className="w-4 h-4 text-rose-600" />
+            <span>Delete Account</span>
+          </button>
+        </div>
       </div>
 
       <SafetyBanner />
 
-      {/* Tabs */}
-      <div className="flex items-center gap-2 border-b border-gray-200 pb-2">
+      {/* 2. RECEIVER SUMMARY KPIS */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+        <div className="bg-white p-6 rounded-3xl border border-[#123C2D]/8 shadow-[0_4px_20px_-4px_rgba(18,60,45,0.04)] hover:shadow-md transition-all">
+          <div className="flex items-center justify-between text-[#718078] mb-2">
+            <span className="text-[11px] font-heading font-bold uppercase tracking-wider text-[#718078]">AI High Matches</span>
+            <Sparkles className="w-5 h-5 text-[#E9A23B]" />
+          </div>
+          <p className="font-heading text-3xl font-extrabold text-[#123C2D] tracking-tight">{personalizedFeed.length}</p>
+          <p className="text-[11px] text-[#16865B] font-medium mt-1">Recommended for your shelter</p>
+        </div>
+
+        <div className="bg-white p-6 rounded-3xl border border-[#123C2D]/8 shadow-[0_4px_20px_-4px_rgba(18,60,45,0.04)] hover:shadow-md transition-all">
+          <div className="flex items-center justify-between text-[#718078] mb-2">
+            <span className="text-[11px] font-heading font-bold uppercase tracking-wider text-[#718078]">Pending Requests</span>
+            <Clock className="w-5 h-5 text-blue-600" />
+          </div>
+          <p className="font-heading text-3xl font-extrabold text-blue-700 tracking-tight">{pendingRequestsCount}</p>
+          <p className="text-[11px] text-blue-600 font-medium mt-1">Awaiting donor approval</p>
+        </div>
+
+        <div className="bg-white p-6 rounded-3xl border border-[#123C2D]/8 shadow-[0_4px_20px_-4px_rgba(18,60,45,0.04)] hover:shadow-md transition-all">
+          <div className="flex items-center justify-between text-[#718078] mb-2">
+            <span className="text-[11px] font-heading font-bold uppercase tracking-wider text-[#718078]">Ready for Pickup</span>
+            <Truck className="w-5 h-5 text-teal-700" />
+          </div>
+          <p className="font-heading text-3xl font-extrabold text-teal-800 tracking-tight">{acceptedPickupsCount}</p>
+          <p className="text-[11px] text-teal-700 font-medium mt-1">Ready at depot/canteen</p>
+        </div>
+
+        <div className="bg-white p-6 rounded-3xl border border-[#123C2D]/8 shadow-[0_4px_20px_-4px_rgba(18,60,45,0.04)] hover:shadow-md transition-all">
+          <div className="flex items-center justify-between text-[#718078] mb-2">
+            <span className="text-[11px] font-heading font-bold uppercase tracking-wider text-[#718078]">Total Received</span>
+            <CheckCircle2 className="w-5 h-5 text-purple-600" />
+          </div>
+          <p className="font-heading text-3xl font-extrabold text-purple-700 tracking-tight">{totalMealsReceived}</p>
+          <p className="text-[11px] text-purple-600 font-medium mt-1">Meals served to beneficiaries</p>
+        </div>
+      </div>
+
+      {/* 3. TABS NAVIGATION */}
+      <div className="flex items-center gap-2 border-b border-[#123C2D]/8 pb-2">
         <button
-          onClick={() => setActiveTab('browse')}
-          className={`py-2 px-3.5 rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer ${
-            activeTab === 'browse'
-              ? 'bg-[#14532D] text-white shadow-2xs'
-              : 'text-gray-600 hover:bg-gray-100'
+          onClick={() => setActiveTab('personalized')}
+          className={`py-2.5 px-5 rounded-full text-xs font-heading font-bold transition-all flex items-center gap-2 cursor-pointer ${
+            activeTab === 'personalized'
+              ? 'bg-[#123C2D] text-white shadow-xs'
+              : 'text-[#718078] hover:bg-[#E8F5ED] hover:text-[#123C2D]'
           }`}
         >
-          <Layers className="w-3.5 h-3.5" />
-          <span>Browse All Donations ({donations.length})</span>
+          <Sparkles className="w-4 h-4 text-[#E9A23B]" />
+          <span>AI Recommendations ({personalizedFeed.length})</span>
         </button>
 
         <button
-          onClick={() => setActiveTab('personalized')}
-          className={`py-2 px-3.5 rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer ${
-            activeTab === 'personalized'
-              ? 'bg-[#14532D] text-white shadow-2xs'
-              : 'text-gray-600 hover:bg-gray-100'
+          onClick={() => setActiveTab('browse')}
+          className={`py-2.5 px-5 rounded-full text-xs font-heading font-bold transition-all flex items-center gap-2 cursor-pointer ${
+            activeTab === 'browse'
+              ? 'bg-[#123C2D] text-white shadow-xs'
+              : 'text-[#718078] hover:bg-[#E8F5ED] hover:text-[#123C2D]'
           }`}
         >
-          <Sparkles className="w-3.5 h-3.5 text-[#F59E0B]" />
-          <span>AI High Matches ({personalizedFeed.length})</span>
+          <Layers className="w-4 h-4" />
+          <span>All Available Food ({donations.length})</span>
         </button>
 
         <button
           onClick={() => setActiveTab('my-requests')}
-          className={`py-2 px-3.5 rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer ${
+          className={`py-2.5 px-5 rounded-full text-xs font-heading font-bold transition-all flex items-center gap-2 cursor-pointer ${
             activeTab === 'my-requests'
-              ? 'bg-[#14532D] text-white shadow-2xs'
-              : 'text-gray-600 hover:bg-gray-100'
+              ? 'bg-[#123C2D] text-white shadow-xs'
+              : 'text-[#718078] hover:bg-[#E8F5ED] hover:text-[#123C2D]'
           }`}
         >
-          <Clock className="w-3.5 h-3.5" />
-          <span>My Active Requests ({myRequests.length})</span>
+          <Clock className="w-4 h-4" />
+          <span>Request History ({myRequests.length})</span>
         </button>
       </div>
 
-      {/* TAB 1: BROWSE ALL DONATIONS */}
-      {activeTab === 'browse' && (
+      {/* 4. TAB CONTENT */}
+      {loading ? (
+        <div className="py-24 text-center text-[#718078] text-sm">
+          <div className="inline-block w-8 h-8 border-3 border-[#16865B] border-t-transparent rounded-full animate-spin mb-2" />
+          <p>Loading receiver portal feeds...</p>
+        </div>
+      ) : activeTab === 'personalized' ? (
+        /* TAB 1: AI RECOMMENDED FOOD */
         <div className="space-y-6">
-          <div className="bg-white p-5 rounded-2xl border border-gray-200/80 shadow-2xs space-y-4">
-            <form onSubmit={handleSearchSubmit} className="flex gap-2">
-              <div className="relative flex-1">
-                <Search className="w-4 h-4 absolute left-3.5 top-3 text-gray-400" />
-                <input
-                  type="text"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  placeholder="Search food by name, donor, category or location..."
-                  className="w-full pl-10 pr-4 py-2.5 text-xs rounded-xl border border-gray-200 focus:outline-hidden focus:ring-2 focus:ring-[#16A34A]/20 focus:border-[#16A34A]"
-                />
-              </div>
-              <button
-                type="submit"
-                className="px-5 py-2.5 rounded-xl bg-[#14532D] hover:bg-[#0f3d21] text-white text-xs font-bold transition cursor-pointer"
-              >
-                Search
-              </button>
-            </form>
-
-            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 pt-2 text-xs">
-              <div>
-                <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">
-                  Category
-                </label>
-                <select
-                  value={categoryFilter}
-                  onChange={(e) => setCategoryFilter(e.target.value)}
-                  className="w-full px-2.5 py-1.5 rounded-lg border border-gray-200 text-xs bg-white text-gray-800"
-                >
-                  <option value="All">All Categories</option>
-                  <option value="Cooked Meals">Cooked Meals</option>
-                  <option value="Rice and Grains">Rice and Grains</option>
-                  <option value="Fruits">Fruits</option>
-                  <option value="Vegetables">Vegetables</option>
-                  <option value="Bakery Items">Bakery Items</option>
-                  <option value="Packaged Food">Packaged Food</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">
-                  Dietary
-                </label>
-                <select
-                  value={dietaryFilter}
-                  onChange={(e) => setDietaryFilter(e.target.value)}
-                  className="w-full px-2.5 py-1.5 rounded-lg border border-gray-200 text-xs bg-white text-gray-800"
-                >
-                  <option value="All">All Dietary</option>
-                  <option value="Vegetarian">Vegetarian</option>
-                  <option value="Non-Vegetarian">Non-Vegetarian</option>
-                  <option value="Vegan">Vegan</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">
-                  Location
-                </label>
-                <select
-                  value={locationFilter}
-                  onChange={(e) => setLocationFilter(e.target.value)}
-                  className="w-full px-2.5 py-1.5 rounded-lg border border-gray-200 text-xs bg-white text-gray-800"
-                >
-                  <option value="All">All Areas</option>
-                  <option value="Manipal">Manipal</option>
-                  <option value="Udupi">Udupi</option>
-                  <option value="Santhekatte">Santhekatte</option>
-                  <option value="Malpe">Malpe</option>
-                  <option value="Brahmavar">Brahmavar</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">
-                  Urgency
-                </label>
-                <select
-                  value={urgencyFilter}
-                  onChange={(e) => setUrgencyFilter(e.target.value)}
-                  className="w-full px-2.5 py-1.5 rounded-lg border border-gray-200 text-xs bg-white text-gray-800"
-                >
-                  <option value="All">All Urgency</option>
-                  <option value="Urgent">Critical & Urgent (&lt; 5 hrs)</option>
-                  <option value="Normal">Normal (&gt; 5 hrs)</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">
-                  Sort By
-                </label>
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value)}
-                  className="w-full px-2.5 py-1.5 rounded-lg border border-gray-200 text-xs bg-white text-gray-800"
-                >
-                  <option value="newest">Newest Listed</option>
-                  <option value="urgency">Most Urgent Deadline</option>
-                  <option value="quantity">Largest Quantity</option>
-                </select>
-              </div>
+          <div className="bg-[#E8F5ED] p-5 rounded-3xl border border-[#16865B]/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <h3 className="font-heading text-sm font-bold text-[#123C2D]">
+                Ranked Specifically for Your Organization
+              </h3>
+              <p className="text-xs text-[#718078] mt-0.5">
+                Evaluated against your location, dietary preferences ({user?.receiver_profile?.dietary_preference || 'Both'}), and capacity.
+              </p>
             </div>
+            <span className="text-[11px] font-heading font-extrabold text-[#16865B] bg-white px-3 py-1 rounded-full border border-[#16865B]/20">
+              {personalizedFeed.length} AI Ranked Matches
+            </span>
           </div>
 
-          {loading ? (
-            <div className="py-20 text-center text-gray-400 text-sm">Loading surplus food listings...</div>
-          ) : sortedDonations.length === 0 ? (
-            <div className="bg-white rounded-2xl p-12 text-center space-y-3 border border-gray-200/80">
-              <p className="font-heading text-base font-bold text-gray-700">No Food Matching Your Filters</p>
-              <p className="text-xs text-gray-500 max-w-sm mx-auto">
-                Try loosening your category, location or dietary filters to view more available donations.
+          {personalizedFeed.length === 0 ? (
+            <div className="bg-white rounded-3xl p-12 text-center space-y-3 border border-[#123C2D]/8">
+              <p className="font-heading text-base font-bold text-[#123C2D]">No Direct Recommendations Currently</p>
+              <p className="text-xs text-[#718078] max-w-sm mx-auto">
+                Check the "All Available Food" tab to browse all surplus listings in the regional area.
               </p>
               <button
-                onClick={() => {
-                  setCategoryFilter('All');
-                  setDietaryFilter('All');
-                  setLocationFilter('All');
-                  setUrgencyFilter('All');
-                  setSearchTerm('');
-                }}
-                className="px-4 py-2 rounded-xl bg-[#14532D] text-white text-xs font-bold cursor-pointer"
+                onClick={() => setActiveTab('browse')}
+                className="px-5 py-2.5 rounded-full bg-[#123C2D] text-white font-heading font-bold text-xs"
               >
-                Reset All Filters
+                Browse All Surplus Food
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-              {sortedDonations.map((d) => (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {personalizedFeed.map((item) => (
                 <FoodCard
-                  key={d.id}
-                  donation={d}
+                  key={item.donation.id}
+                  donation={item.donation}
                   receiverView={true}
+                  matchScore={item.match_score}
                   onRequest={handleOpenRequestModal}
                 />
               ))}
             </div>
           )}
         </div>
-      )}
-
-      {/* TAB 2: AI PERSONALIZED FEED */}
-      {activeTab === 'personalized' && (
+      ) : activeTab === 'browse' ? (
+        /* TAB 2: BROWSE ALL AVAILABLE FOOD */
         <div className="space-y-6">
-          <div className="bg-[#14532D] rounded-2xl p-6 sm:p-8 text-white space-y-2 border border-[#14532D]">
-            <span className="text-xs font-bold text-[#F59E0B] uppercase tracking-wider flex items-center gap-1.5">
-              <Sparkles className="w-4 h-4 text-[#F59E0B]" />
-              <span>Multi-Factor Recommendation Feed</span>
-            </span>
-            <h2 className="font-heading text-2xl font-bold">Food Opportunities Tailored For You</h2>
-            <p className="text-xs text-[#ECFDF5]/80 max-w-2xl leading-relaxed">
-              Ranked specifically for your organization based on proximity ({user?.location_name || 'Manipal'}), capacity ({user?.receiver_profile?.required_capacity_meals || 40} meals), urgency, and dietary compatibility.
-            </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {donations.map((d) => (
+              <FoodCard
+                key={d.id}
+                donation={d}
+                receiverView={true}
+                onRequest={handleOpenRequestModal}
+              />
+            ))}
+          </div>
+        </div>
+      ) : (
+        /* TAB 3: REQUEST HISTORY */
+        <div className="bg-white rounded-3xl p-6 sm:p-8 border border-[#123C2D]/8 shadow-[0_4px_24px_-4px_rgba(18,60,45,0.04)] space-y-6">
+          <div>
+            <h2 className="font-heading text-xl font-extrabold text-[#123C2D]">Food Request Tracking</h2>
+            <p className="text-xs text-[#718078]">Track approved allocations, van dispatch schedules, and pickup completions.</p>
           </div>
 
-          {loading ? (
-            <div className="py-20 text-center text-gray-400 text-sm">Computing AI match scores...</div>
-          ) : personalizedFeed.length === 0 ? (
-            <div className="bg-white rounded-2xl p-12 text-center text-gray-500 text-sm border border-gray-200/80">
-              No active surplus food currently matches your profile preferences.
+          {myRequests.length === 0 ? (
+            <div className="py-12 text-center text-[#718078] text-xs">
+              You haven't requested any food yet. Browse available donations and click "Request" to start.
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-              {personalizedFeed.map((item) => (
-                <div key={item.donation.id} className="relative">
-                  <FoodCard
-                    donation={item.donation}
-                    receiverView={true}
-                    matchScore={item.match_score}
-                    onRequest={handleOpenRequestModal}
-                  />
-                  <div className="bg-[#ECFDF5] border border-[#16A34A]/20 rounded-b-2xl -mt-2 p-3 text-[11px] text-[#14532D] shadow-2xs">
-                    <strong>AI Reason:</strong> {item.reason}
+            <div className="divide-y divide-[#123C2D]/6">
+              {myRequests.map((req) => (
+                <div key={req.id} className="py-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div className="space-y-1.5 flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-heading text-base font-bold text-[#123C2D]">
+                        {req.donation?.food_name || `Donation #${req.donation_id}`}
+                      </span>
+                      <StatusBadge status={req.status} />
+                    </div>
+
+                    <p className="text-xs text-[#718078]">
+                      Requested Quantity: <strong className="text-[#202B25]">{req.requested_quantity} {req.donation?.quantity_unit || 'Meals'}</strong> • Pickup: {req.donation?.pickup_location}
+                    </p>
+
+                    {req.message && (
+                      <p className="text-xs text-[#202B25] italic pt-1">
+                        "{req.message}"
+                      </p>
+                    )}
+
+                    <p className="text-[11px] text-[#718078] font-mono">
+                      Submitted on: {new Date(req.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'short' })}
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-3 shrink-0">
+                    <Link
+                      to={`/donation/${req.donation_id}`}
+                      className="px-4 py-2 rounded-full bg-[#F8FAF7] hover:bg-[#E8F5ED] text-[#123C2D] font-heading font-bold text-xs border border-[#123C2D]/10 transition-all"
+                    >
+                      View Batch Details
+                    </Link>
                   </div>
                 </div>
               ))}
@@ -384,111 +390,29 @@ export const ReceiverDashboard = () => {
         </div>
       )}
 
-      {/* TAB 3: MY ACTIVE REQUESTS */}
-      {activeTab === 'my-requests' && (
-        <div className="bg-white rounded-2xl p-6 sm:p-8 border border-gray-200/80 shadow-2xs space-y-5">
-          <div>
-            <h2 className="font-heading text-lg font-bold text-gray-900">My Food Requests & Pickup Status</h2>
-            <p className="text-xs text-gray-500">Track the lifecycle of your food requests from submission to collection.</p>
-          </div>
-
-          {loading ? (
-            <div className="py-16 text-center text-gray-400 text-sm">Loading your requests...</div>
-          ) : myRequests.length === 0 ? (
-            <div className="text-center py-16 space-y-3">
-              <p className="font-heading text-sm font-bold text-gray-700">No Food Requests Submitted</p>
-              <p className="text-xs text-gray-500">Browse available food listings and submit requests to receive surplus food.</p>
-              <button
-                onClick={() => setActiveTab('browse')}
-                className="px-4 py-2 rounded-xl bg-[#14532D] text-white text-xs font-bold cursor-pointer"
-              >
-                Browse Available Food
-              </button>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead className="bg-gray-50/75 text-gray-500 uppercase font-bold text-[10px] tracking-wider border-y border-gray-100">
-                  <tr>
-                    <th className="py-3 px-4">Food Item</th>
-                    <th className="py-3 px-4">Requested Qty</th>
-                    <th className="py-3 px-4">Pickup Location</th>
-                    <th className="py-3 px-4">Submitted At</th>
-                    <th className="py-3 px-4">Status</th>
-                    <th className="py-3 px-4 text-right">Action</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100 text-gray-700">
-                  {myRequests.map((r) => (
-                    <tr key={r.id} className="hover:bg-gray-50/70 transition">
-                      <td className="py-3.5 px-4 font-bold text-gray-900">
-                        <Link to={`/donation/${r.donation_id}`} className="hover:text-[#14532D]">
-                          {r.donation?.food_name || `Donation #${r.donation_id}`}
-                        </Link>
-                      </td>
-
-                      <td className="py-3.5 px-4 font-bold text-[#14532D] font-mono">
-                        {r.requested_quantity} {r.donation?.quantity_unit || 'Meals'}
-                      </td>
-
-                      <td className="py-3.5 px-4 text-gray-600">
-                        {r.donation?.pickup_location || 'Contact Donor'}
-                      </td>
-
-                      <td className="py-3.5 px-4 text-gray-400 font-mono text-[11px]">
-                        {new Date(r.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'short' })}
-                      </td>
-
-                      <td className="py-3.5 px-4">
-                        <StatusBadge status={r.status} />
-                      </td>
-
-                      <td className="py-3.5 px-4 text-right">
-                        <Link
-                          to={`/donation/${r.donation_id}`}
-                          className="px-3 py-1.5 rounded-xl bg-gray-100 hover:bg-[#ECFDF5] text-[#14532D] font-bold text-[11px] transition"
-                        >
-                          View Tracker
-                        </Link>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Request Modal */}
+      {/* Request Food Modal */}
       {requestModalOpen && selectedDonation && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs animate-fade-in">
-          <div className="bg-white rounded-3xl max-w-md w-full p-6 sm:p-7 shadow-2xl border border-gray-100">
-            <div className="flex items-start justify-between pb-3 border-b border-gray-100 mb-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/50 backdrop-blur-xs animate-fade-in">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl border border-[#123C2D]/10 space-y-5">
+            <div className="flex items-start justify-between pb-3 border-b border-[#123C2D]/8">
               <div>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-[#14532D] bg-[#ECFDF5] px-2.5 py-0.5 rounded-full border border-[#16A34A]/20">
-                  Submit Food Request
+                <span className="text-[10px] font-heading font-extrabold uppercase tracking-wider text-[#123C2D] bg-[#E8F5ED] px-3 py-0.5 rounded-full border border-[#16865B]/20">
+                  Receiver Allocation Request
                 </span>
-                <h3 className="font-heading text-base font-bold text-gray-900 mt-1">
-                  {selectedDonation.food_name}
+                <h3 className="font-heading text-lg font-bold text-[#123C2D] mt-1.5">
+                  Request {selectedDonation.food_name}
                 </h3>
               </div>
               <button
                 onClick={() => setRequestModalOpen(false)}
-                className="p-1 rounded-xl text-gray-400 hover:text-gray-600 hover:bg-gray-100 cursor-pointer"
+                className="p-1 rounded-full text-gray-400 hover:text-gray-600 cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="bg-gray-50 p-3 rounded-xl mb-4 text-xs space-y-1 text-gray-600">
-              <p><strong>Available:</strong> {selectedDonation.quantity} {selectedDonation.quantity_unit}</p>
-              <p><strong>Location:</strong> {selectedDonation.pickup_location}</p>
-              <p><strong>Deadline:</strong> {new Date(selectedDonation.consumption_deadline).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
-            </div>
-
             {requestError && (
-              <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-800 text-xs font-medium mb-4 flex items-center gap-2">
+              <div className="p-3.5 bg-rose-50 border border-rose-200 rounded-2xl text-rose-800 text-xs font-medium flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
                 <span>{requestError}</span>
               </div>
@@ -496,54 +420,72 @@ export const ReceiverDashboard = () => {
 
             <form onSubmit={handleSubmitRequest} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">
-                  Requested Quantity ({selectedDonation.quantity_unit}) *
-                </label>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-xs font-heading font-bold text-[#202B25] uppercase tracking-wider">
+                    Quantity Required ({selectedDonation.quantity_unit}) * (Integer)
+                  </label>
+                  <span className="text-[11px] text-[#16865B] font-mono font-bold">
+                    Available: {selectedDonation.remaining_quantity !== null && selectedDonation.remaining_quantity !== undefined ? selectedDonation.remaining_quantity : selectedDonation.quantity} {selectedDonation.quantity_unit}
+                  </span>
+                </div>
                 <input
                   type="number"
-                  step="0.5"
+                  step="1"
                   min="1"
-                  max={selectedDonation.quantity}
+                  max={selectedDonation.remaining_quantity !== null && selectedDonation.remaining_quantity !== undefined ? selectedDonation.remaining_quantity : selectedDonation.quantity}
                   required
                   value={requestQuantity}
-                  onChange={(e) => setRequestQuantity(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-xs focus:outline-hidden focus:ring-2 focus:ring-[#16A34A]/20 focus:border-[#16A34A] font-mono"
+                  onChange={(e) => setRequestQuantity(e.target.value.replace(/[^0-9]/g, ''))}
+                  className="w-full px-4 py-2.5 rounded-xl border border-[#123C2D]/12 font-mono text-sm focus:outline-hidden focus:ring-2 focus:ring-[#16865B]/25 focus:border-[#16865B] bg-[#F8FAF7]"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">
-                  Message for Donor (Vehicle ETA / Beneficiary Details)
+                <label className="block text-xs font-heading font-bold text-[#202B25] uppercase tracking-wider mb-1.5">
+                  Pickup Van Schedule / Note to Donor
                 </label>
                 <textarea
                   rows="3"
                   value={requestMessage}
                   onChange={(e) => setRequestMessage(e.target.value)}
-                  placeholder="e.g. We have 35 children in our care shelter. Our volunteer van can collect at 4:30 PM."
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-xs focus:outline-hidden focus:ring-2 focus:ring-[#16A34A]/20 focus:border-[#16A34A]"
+                  placeholder="e.g. Volunteer van scheduled for pickup at 3:15 PM..."
+                  className="w-full px-4 py-2.5 rounded-xl border border-[#123C2D]/12 text-xs focus:outline-hidden focus:ring-2 focus:ring-[#16865B]/25 focus:border-[#16865B] bg-[#F8FAF7]"
                 />
               </div>
 
-              <div className="pt-2 flex items-center justify-end gap-2.5">
+              <div className="flex items-center justify-end gap-2.5 pt-2">
                 <button
                   type="button"
                   onClick={() => setRequestModalOpen(false)}
-                  className="px-4 py-2 rounded-xl text-gray-700 text-xs font-bold hover:bg-gray-100 transition cursor-pointer"
+                  className="px-4 py-2.5 rounded-full text-[#718078] hover:bg-gray-100 text-xs font-heading font-bold transition cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={submittingRequest}
-                  className="px-5 py-2 rounded-xl bg-[#14532D] hover:bg-[#0f3d21] text-white text-xs font-bold shadow-2xs transition disabled:opacity-50 cursor-pointer"
+                  className="px-6 py-2.5 rounded-full bg-[#123C2D] hover:bg-[#16865B] text-white text-xs font-heading font-bold shadow-md shadow-[#123C2D]/15 transition disabled:opacity-50 cursor-pointer"
                 >
-                  {submittingRequest ? 'Submitting...' : 'Confirm Request'}
+                  {submittingRequest ? 'Submitting...' : 'Confirm Food Request'}
                 </button>
               </div>
             </form>
           </div>
         </div>
       )}
+
+      {/* Account Deletion Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={deleteAccountModalOpen}
+        title="Permanently Delete Your Account?"
+        message="Are you sure you want to delete your receiver shelter account? All your active allocation requests and organization profile will be permanently deleted."
+        confirmText="Yes, Permanently Delete My Account"
+        cancelText="Cancel"
+        confirmVariant="rose"
+        isLoading={deletingAccount}
+        onConfirm={handleDeleteMyAccount}
+        onCancel={() => setDeleteAccountModalOpen(false)}
+      />
     </div>
   );
 };

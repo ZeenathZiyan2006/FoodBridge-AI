@@ -32,14 +32,35 @@ def create_food_request(
             detail="Safety Violation: This food donation has passed its consumption deadline and cannot be requested."
         )
 
-    # Check if donation is available or already requested
+    # Check if donation is available or accepting requests
     if donation.status in ["Completed", "Cancelled"]:
         raise HTTPException(
             status_code=400,
             detail=f"This donation is currently '{donation.status}' and no longer accepts requests."
         )
 
-    # Check for duplicate request by this receiver
+    # Quantity validation (must be positive integer)
+    if request_in.requested_quantity <= 0:
+        raise HTTPException(
+            status_code=400,
+            detail="Requested quantity must be a positive whole number (at least 1)."
+        )
+
+    # Check available remaining quantity
+    available_qty = donation.remaining_quantity if donation.remaining_quantity is not None else donation.quantity
+    if available_qty <= 0:
+        raise HTTPException(
+            status_code=400,
+            detail="This food donation has already been fully allocated to receivers."
+        )
+
+    if request_in.requested_quantity > available_qty:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Requested quantity ({int(request_in.requested_quantity)}) exceeds available quantity ({int(available_qty)} {donation.quantity_unit})."
+        )
+
+    # Check for duplicate active request by this receiver for this donation
     existing_req = db.query(FoodRequest).filter(
         FoodRequest.donation_id == donation.id,
         FoodRequest.receiver_id == current_user.id,
@@ -55,16 +76,16 @@ def create_food_request(
     new_request = FoodRequest(
         donation_id=donation.id,
         receiver_id=current_user.id,
-        requested_quantity=request_in.requested_quantity,
+        requested_quantity=int(request_in.requested_quantity),
         message=request_in.message or "Food request submitted via FoodBridge AI.",
         status="Requested"
     )
     db.add(new_request)
 
-    # Update donation status to "Requested" if it was "Available"
-    if donation.status == "Available":
-        donation.status = "Requested"
-        donation.updated_at = now
+    # Keep donation status as Available so other receivers can also request portions!
+    # If remaining_quantity is not yet set, set it to total quantity
+    if donation.remaining_quantity is None:
+        donation.remaining_quantity = donation.quantity
 
     # Log in DonationStatusHistory
     history = DonationStatusHistory(
@@ -158,19 +179,52 @@ def update_request_status(
     req.status = new_status
     req.updated_at = now
 
-    # Also sync donation status if appropriate
-    if new_status in ["Accepted", "Ready for Pickup", "Collected", "Completed"]:
-        donation.status = new_status
-        donation.updated_at = now
-    elif new_status == "Rejected":
-        # Check if there are other pending requests
-        other_active = db.query(FoodRequest).filter(
-            FoodRequest.donation_id == donation.id,
-            FoodRequest.id != req.id,
-            FoodRequest.status.in_(["Requested", "Accepted"])
-        ).first()
-        if not other_active:
+    # Handle donor partial quantity allocation when accepting
+    if new_status == "Accepted":
+        approved_qty = status_update.approved_quantity
+        if approved_qty is None or approved_qty <= 0:
+            approved_qty = req.requested_quantity
+        approved_qty = float(approved_qty)
+
+        current_rem = donation.remaining_quantity if donation.remaining_quantity is not None else donation.quantity
+        if approved_qty > current_rem:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Approved quantity ({int(approved_qty)}) exceeds available remaining quantity ({int(current_rem)} {donation.quantity_unit})."
+            )
+
+        req.approved_quantity = approved_qty
+        donation.remaining_quantity = max(0.0, current_rem - approved_qty)
+
+        # If all portions allocated, donation becomes Accepted; otherwise remains Available for others!
+        if donation.remaining_quantity <= 0:
+            donation.status = "Accepted"
+        else:
             donation.status = "Available"
+        donation.updated_at = now
+
+    elif new_status in ["Ready for Pickup", "Collected", "Completed"]:
+        if (donation.remaining_quantity or 0.0) <= 0:
+            donation.status = new_status
+            donation.updated_at = now
+
+    elif new_status in ["Rejected", "Cancelled"]:
+        # If this was previously accepted, return quantity back to pool
+        if req.approved_quantity and req.approved_quantity > 0:
+            donation.remaining_quantity = (donation.remaining_quantity or 0.0) + req.approved_quantity
+            req.approved_quantity = 0.0
+            if donation.remaining_quantity > 0:
+                donation.status = "Available"
+                donation.updated_at = now
+        else:
+            other_active = db.query(FoodRequest).filter(
+                FoodRequest.donation_id == donation.id,
+                FoodRequest.id != req.id,
+                FoodRequest.status.in_(["Requested", "Accepted"])
+            ).first()
+            if not other_active and (donation.remaining_quantity or 0.0) > 0:
+                donation.status = "Available"
+                donation.updated_at = now
 
     # Status history log
     note_text = status_update.notes or f"Status transitioned to '{new_status}' by {current_user.full_name}."
