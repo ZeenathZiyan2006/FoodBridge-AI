@@ -266,18 +266,20 @@ export const DonationDetailPage = () => {
                 <span>Donor Contact: <strong className="text-[#202B25]">{donation.donor_contact || donation.donor?.phone || 'Available upon request'}</strong></span>
               </div>
 
-              {/* Travel Time ETA */}
-              <div className="mt-2 pt-2 border-t border-[#123C2D]/8 flex items-start gap-2.5 bg-[#E8F5ED]/80 p-2.5 rounded-xl">
-                <Navigation className="w-4 h-4 text-[#16865B] shrink-0 mt-0.5 animate-pulse" />
-                <div>
-                  <p className="font-heading font-extrabold text-[#123C2D] text-xs">
-                    Receiver Travel Time: ~{travelTimeMins} mins ({distanceKm} km away)
-                  </p>
-                  <p className="text-[10px] text-[#718078]">
-                    Estimated volunteer route duration from receiver depot to donor kitchen.
-                  </p>
+              {/* Travel Time ETA (Visible for receivers only) */}
+              {user?.role !== 'donor' && (
+                <div className="mt-2 pt-2 border-t border-[#123C2D]/8 flex items-start gap-2.5 bg-[#E8F5ED]/80 p-2.5 rounded-xl">
+                  <Navigation className="w-4 h-4 text-[#16865B] shrink-0 mt-0.5 animate-pulse" />
+                  <div>
+                    <p className="font-heading font-extrabold text-[#123C2D] text-xs">
+                      Receiver Travel Time: ~{travelTimeMins} mins ({distanceKm} km away)
+                    </p>
+                    <p className="text-[10px] text-[#718078]">
+                      Estimated volunteer route duration from receiver depot to donor kitchen.
+                    </p>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           </div>
 
@@ -311,43 +313,45 @@ export const DonationDetailPage = () => {
         </div>
       </div>
 
-      {/* Interactive Donor Location Map & Google Directions (Requirement 7) */}
-      <div className="bg-white rounded-3xl p-6 sm:p-7 border border-[#123C2D]/10 shadow-[0_4px_24px_-4px_rgba(18,60,45,0.06)] space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#123C2D]/8">
-          <div>
-            <div className="flex items-center gap-2">
-              <MapPin className="w-4 h-4 text-[#16865B]" />
-              <h3 className="font-heading text-base sm:text-lg font-bold text-[#123C2D]">
-                Donor Pickup Location & Navigation Map
-              </h3>
+      {/* Interactive Donor Location Map & Google Directions (Shown strictly to Receivers, not Donors) */}
+      {user?.role !== 'donor' && (
+        <div className="bg-white rounded-3xl p-6 sm:p-7 border border-[#123C2D]/10 shadow-[0_4px_24px_-4px_rgba(18,60,45,0.06)] space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#123C2D]/8">
+            <div>
+              <div className="flex items-center gap-2">
+                <MapPin className="w-4 h-4 text-[#16865B]" />
+                <h3 className="font-heading text-base sm:text-lg font-bold text-[#123C2D]">
+                  Donor Pickup Location & Navigation Map
+                </h3>
+              </div>
+              <p className="text-xs text-[#718078] mt-0.5">
+                {donation.pickup_location} • GPS Coordinates: {donorLat.toFixed(4)}, {donorLon.toFixed(4)}
+              </p>
             </div>
-            <p className="text-xs text-[#718078] mt-0.5">
-              {donation.pickup_location} • GPS Coordinates: {donorLat.toFixed(4)}, {donorLon.toFixed(4)}
-            </p>
+
+            <a
+              href={mapsUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#123C2D] hover:bg-[#16865B] text-white text-xs font-heading font-bold shadow-md shadow-[#123C2D]/15 hover:shadow-lg transition-all cursor-pointer"
+            >
+              <Navigation className="w-3.5 h-3.5 text-[#E8F5ED]" />
+              <span>Open in Google Maps</span>
+              <ExternalLink className="w-3 h-3 opacity-75" />
+            </a>
           </div>
 
-          <a
-            href={mapsUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#123C2D] hover:bg-[#16865B] text-white text-xs font-heading font-bold shadow-md shadow-[#123C2D]/15 hover:shadow-lg transition-all cursor-pointer"
-          >
-            <Navigation className="w-3.5 h-3.5 text-[#E8F5ED]" />
-            <span>Open in Google Maps</span>
-            <ExternalLink className="w-3 h-3 opacity-75" />
-          </a>
+          {/* Embedded OpenStreetMap */}
+          <div className="rounded-2xl overflow-hidden border border-[#123C2D]/12 h-64 sm:h-72 w-full relative shadow-inner">
+            <iframe
+              title="Donor Pickup Map"
+              src={osmEmbedUrl}
+              className="w-full h-full border-0"
+              loading="lazy"
+            />
+          </div>
         </div>
-
-        {/* Embedded OpenStreetMap */}
-        <div className="rounded-2xl overflow-hidden border border-[#123C2D]/12 h-64 sm:h-72 w-full relative shadow-inner">
-          <iframe
-            title="Donor Pickup Map"
-            src={osmEmbedUrl}
-            className="w-full h-full border-0"
-            loading="lazy"
-          />
-        </div>
-      </div>
+      )}
 
       {/* Visual Lifecycle Progress Tracker & History */}
       <LifecycleTracker

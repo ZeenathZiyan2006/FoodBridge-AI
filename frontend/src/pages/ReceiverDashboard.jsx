@@ -67,9 +67,17 @@ export const ReceiverDashboard = () => {
         api.getReceiverFeed().catch(() => []),
       ]);
 
-      setDonations(allDonations || []);
+      // Filter out any expired or fully claimed food listings
+      const freshAvailable = (allDonations || []).filter(
+        (d) => d.status === 'Available' && d.hours_left > 0 && ((d.remaining_quantity !== null && d.remaining_quantity !== undefined ? d.remaining_quantity : d.quantity) > 0)
+      );
+      setDonations(freshAvailable);
       setMyRequests(myReqs || []);
-      setPersonalizedFeed(feed || []);
+
+      const activeFeed = (feed || []).filter(
+        (f) => f.donation && f.donation.status === 'Available' && f.donation.hours_left > 0 && ((f.donation.remaining_quantity !== null && f.donation.remaining_quantity !== undefined ? f.donation.remaining_quantity : f.donation.quantity) > 0)
+      );
+      setPersonalizedFeed(activeFeed);
     } catch (err) {
       showToast(err.message || 'Failed to load food listings', 'error');
     } finally {

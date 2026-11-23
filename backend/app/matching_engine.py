@@ -110,16 +110,18 @@ def calculate_quantity_compatibility(
 def calculate_urgency_score(deadline: datetime) -> Tuple[float, float, str]:
     """
     Computes urgency score (0 - 100), remaining hours, and urgency tier.
+    Uses UTC consistently with database naive timestamps.
     """
-    now = datetime.now()
+    now = datetime.utcnow()
     if deadline.tzinfo:
-        now = datetime.now(timezone.utc)
+        now = datetime.now(timezone.utc).replace(tzinfo=None)
+        deadline = deadline.astimezone(timezone.utc).replace(tzinfo=None)
         
     time_diff = (deadline - now).total_seconds()
-    hours_left = round(time_diff / 3600.0, 1)
+    hours_left = max(0.0, round(time_diff / 3600.0, 1))
     
     if hours_left <= 0:
-        return (0.0, hours_left, "Expired")
+        return (0.0, 0.0, "Expired")
     elif hours_left <= 2.0:
         # Critical urgency - immediate redistribution required
         return (100.0, hours_left, "Critical")

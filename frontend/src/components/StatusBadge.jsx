@@ -1,7 +1,27 @@
 import React from 'react';
 import { Clock, CheckCircle2, Package, Truck, Sparkles, XCircle, ShieldCheck } from 'lucide-react';
 
-export const StatusBadge = ({ status, urgencyLevel }) => {
+export const StatusBadge = ({ status, urgencyLevel, receiverView = false }) => {
+  // If expired, always label as Unavailable
+  if (status === 'Expired' || urgencyLevel === 'Expired') {
+    return (
+      <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-[11px] font-heading font-bold bg-rose-50 text-rose-800 border border-rose-200 shadow-2xs">
+        <XCircle className="w-3.5 h-3.5 text-rose-600" />
+        <span>Unavailable</span>
+      </span>
+    );
+  }
+
+  // If already requested/allocated and viewing from receiver side, label as Unavailable
+  if (receiverView && (status === 'Requested' || status === 'Accepted' || status === 'Allocated')) {
+    return (
+      <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-[11px] font-heading font-bold bg-amber-50 text-amber-900 border border-amber-200 shadow-2xs">
+        <Package className="w-3.5 h-3.5 text-amber-600" />
+        <span>Unavailable (Requested)</span>
+      </span>
+    );
+  }
+
   // If urgency is critical/urgent and status is Available, highlight urgency
   if (status === 'Available' && (urgencyLevel === 'Critical' || urgencyLevel === 'Urgent')) {
     return (

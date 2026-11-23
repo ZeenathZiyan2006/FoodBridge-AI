@@ -51,6 +51,15 @@ export const LandingPage = () => {
   const [featuredDonations, setFeaturedDonations] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // Automatically direct authenticated users to their primary workspace
+  useEffect(() => {
+    if (user?.role === 'donor') {
+      navigate('/donor-dashboard', { replace: true });
+    } else if (user?.role === 'receiver') {
+      navigate('/receiver-dashboard', { replace: true });
+    }
+  }, [user, navigate]);
+
   useEffect(() => {
     const loadLandingData = async () => {
       try {
@@ -216,13 +225,13 @@ export const LandingPage = () => {
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center max-w-2xl mx-auto mb-8 space-y-2">
           <span className="text-xs font-heading font-bold uppercase tracking-wider text-[#123C2D] bg-[#E8F5ED] px-3.5 py-1 rounded-full border border-[#16865B]/25 shadow-2xs">
-            Live Verified Metrics
+            {t('verified_metrics')}
           </span>
           <h2 className="font-heading text-2xl sm:text-3xl font-extrabold text-[#123C2D]">
-            Measurable Community Impact
+            {t('community_impact_title')}
           </h2>
           <p className="text-xs sm:text-sm text-[#718078]">
-            Real-time surplus redistribution statistics calculated directly from our local database.
+            {t('community_impact_desc')}
           </p>
         </div>
 
@@ -237,9 +246,9 @@ export const LandingPage = () => {
                 {stats.total_donations}
               </p>
               <h3 className="font-heading text-xs sm:text-sm font-bold text-[#202B25] mt-1">
-                Total Food Donations
+                {t('card_total_donations')}
               </h3>
-              <p className="text-[11px] text-[#718078] mt-0.5">Surplus batches listed</p>
+              <p className="text-[11px] text-[#718078] mt-0.5">{t('card_total_donations_sub')}</p>
             </div>
           </div>
 
@@ -253,9 +262,9 @@ export const LandingPage = () => {
                 {foodDistributedKg} kg
               </p>
               <h3 className="font-heading text-xs sm:text-sm font-bold text-[#202B25] mt-1">
-                Food Distributed (kg)
+                {t('card_food_distributed')}
               </h3>
-              <p className="text-[11px] text-[#718078] mt-0.5">{stats.total_meals_redistributed}+ meals delivered</p>
+              <p className="text-[11px] text-[#718078] mt-0.5">{stats.total_meals_redistributed}+ {t('card_food_distributed_sub')}</p>
             </div>
           </div>
 
@@ -269,9 +278,9 @@ export const LandingPage = () => {
                 {stats.active_donors}
               </p>
               <h3 className="font-heading text-xs sm:text-sm font-bold text-[#202B25] mt-1">
-                Active Donors
+                {t('card_active_donors')}
               </h3>
-              <p className="text-[11px] text-[#718078] mt-0.5">Canteens, hotels & kitchens</p>
+              <p className="text-[11px] text-[#718078] mt-0.5">{t('card_active_donors_sub')}</p>
             </div>
           </div>
 
@@ -285,9 +294,9 @@ export const LandingPage = () => {
                 {stats.active_receivers}
               </p>
               <h3 className="font-heading text-xs sm:text-sm font-bold text-[#202B25] mt-1">
-                Receiving Organizations
+                {t('card_receivers')}
               </h3>
-              <p className="text-[11px] text-[#718078] mt-0.5">Shelters & welfare homes</p>
+              <p className="text-[11px] text-[#718078] mt-0.5">{t('card_receivers_sub')}</p>
             </div>
           </div>
         </div>
@@ -297,13 +306,13 @@ export const LandingPage = () => {
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center max-w-2xl mx-auto mb-12 space-y-2.5">
           <span className="text-xs font-heading font-bold uppercase tracking-wider text-[#123C2D] bg-[#E8F5ED] px-3.5 py-1 rounded-full border border-[#16865B]/25">
-            Simple 3-Step Process
+            {t('process_badge')}
           </span>
           <h2 className="font-heading text-3xl sm:text-4xl font-extrabold text-[#123C2D]">
-            How FoodBridge AI Works
+            {t('process_title')}
           </h2>
           <p className="text-xs sm:text-sm text-[#718078]">
-            A seamless bridge from commercial surplus kitchens directly into compassionate community nutrition.
+            {t('process_subtitle')}
           </p>
         </div>
 
@@ -320,15 +329,15 @@ export const LandingPage = () => {
                 </div>
               </div>
               <h3 className="font-heading text-lg font-bold text-[#123C2D]">
-                Donate Food
+                {t('step1_title')}
               </h3>
               <p className="text-xs text-[#718078] leading-relaxed">
-                Restaurants and hotels list surplus food with quantity, dietary type, storage condition, and consumption deadline within 60 seconds.
+                {t('step1_desc')}
               </p>
             </div>
             <div className="mt-6 pt-4 border-t border-[#123C2D]/6">
               <span className="text-[11px] font-heading font-bold text-[#16865B] flex items-center gap-1 group-hover:translate-x-1 transition-transform">
-                <span>Instant Donor Verification</span>
+                <span>{t('fssai_badge')}</span>
                 <ChevronRight className="w-3.5 h-3.5" />
               </span>
             </div>
@@ -346,15 +355,15 @@ export const LandingPage = () => {
                 </div>
               </div>
               <h3 className="font-heading text-lg font-bold text-[#123C2D]">
-                AI Matching
+                {t('step2_title')}
               </h3>
               <p className="text-xs text-[#718078] leading-relaxed">
-                Intelligent algorithms match donations with suitable receivers based on distance proximity (40%), shelter capacity (25%), time urgency (25%), and dietary safety (10%).
+                {t('step2_desc')}
               </p>
             </div>
             <div className="mt-6 pt-4 border-t border-[#123C2D]/6">
               <span className="text-[11px] font-heading font-bold text-[#16865B] flex items-center gap-1 group-hover:translate-x-1 transition-transform">
-                <span>4-Factor Algorithmic Ranking</span>
+                <span>{t('tag_matching')}</span>
                 <ChevronRight className="w-3.5 h-3.5" />
               </span>
             </div>
@@ -372,15 +381,15 @@ export const LandingPage = () => {
                 </div>
               </div>
               <h3 className="font-heading text-lg font-bold text-[#123C2D]">
-                Share Hope
+                {t('step3_title')}
               </h3>
               <p className="text-xs text-[#718078] leading-relaxed">
-                Food reaches orphanages and communities in need safely and warmly. Every completed pickup logs greenhouse gas savings and meal counts transparently.
+                {t('step3_desc')}
               </p>
             </div>
             <div className="mt-6 pt-4 border-t border-[#123C2D]/6">
               <span className="text-[11px] font-heading font-bold text-[#16865B] flex items-center gap-1 group-hover:translate-x-1 transition-transform">
-                <span>Zero Hunger Impact Verified</span>
+                <span>{t('tag_mission')}</span>
                 <ChevronRight className="w-3.5 h-3.5" />
               </span>
             </div>
@@ -631,11 +640,11 @@ export const LandingPage = () => {
             </div>
 
             <h2 className="font-heading text-3xl sm:text-4xl font-extrabold text-[#123C2D] tracking-tight">
-              Ready to Eliminate Food Waste in Your Community?
+              {t('cta_ready_title')}
             </h2>
 
             <p className="text-xs sm:text-sm text-[#718078] leading-relaxed max-w-lg mx-auto">
-              Whether you are a university canteen, hotel banquet kitchen, or community shelter, joining FoodBridge AI takes under two minutes.
+              {t('cta_ready_desc')}
             </p>
 
             <div className="flex flex-wrap items-center justify-center gap-3.5 pt-2">
@@ -643,14 +652,14 @@ export const LandingPage = () => {
                 to="/register"
                 className="px-7 py-3.5 rounded-full bg-[#123C2D] hover:bg-[#16865B] text-white font-heading font-bold text-xs sm:text-sm shadow-md shadow-[#123C2D]/20 hover:shadow-lg transition-all"
               >
-                Get Started as a Donor or Receiver
+                {t('register')}
               </Link>
 
               <Link
                 to="/available-food"
                 className="px-7 py-3.5 rounded-full bg-white hover:bg-gray-50 text-[#123C2D] font-heading font-bold text-xs sm:text-sm border border-[#123C2D]/20 shadow-2xs transition-all"
               >
-                Explore Active Listings
+                {t('available_food')}
               </Link>
             </div>
           </div>

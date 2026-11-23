@@ -191,9 +191,15 @@ export const MatchingEnginePage = () => {
             <div className="flex items-center gap-3">
               <div className="bg-white px-4 py-2 rounded-2xl border border-[#16865B]/20 text-center shadow-2xs">
                 <p className="text-[10px] font-heading font-bold text-[#718078] uppercase">Urgency Window</p>
-                <p className="text-xs font-heading font-extrabold text-[#9A6217] font-mono mt-0.5">
-                  {recommendations.urgency_level} ({recommendations.hours_left} hrs)
-                </p>
+                {recommendations.hours_left > 0 ? (
+                  <p className="text-xs font-heading font-extrabold text-[#9A6217] font-mono mt-0.5">
+                    {recommendations.urgency_level} ({recommendations.hours_left} hrs remaining)
+                  </p>
+                ) : (
+                  <p className="text-xs font-heading font-extrabold text-rose-600 font-mono mt-0.5">
+                    Expired (Unavailable)
+                  </p>
+                )}
               </div>
 
               <Link

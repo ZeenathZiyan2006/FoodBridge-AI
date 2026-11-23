@@ -1,8 +1,11 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Leaf, ShieldCheck, Heart, Sparkles, ExternalLink, ArrowRight } from 'lucide-react';
+import { useLanguage } from '../context/LanguageContext';
 
 export const Footer = () => {
+  const { t } = useLanguage();
+
   return (
     <footer className="bg-[#123C2D] text-[#E8F5ED]/80 text-sm mt-auto border-t border-[#16865B]/20 relative overflow-hidden">
       {/* Subtle organic light accent in the background */}
@@ -28,7 +31,7 @@ export const Footer = () => {
             </div>
 
             <p className="text-xs text-[#E8F5ED]/70 max-w-sm leading-relaxed">
-              Empowering commercial kitchens, hostels, restaurants, and caterers to seamlessly redirect edible surplus meals to orphanages and community shelters through intelligent, explainable AI matchmaking.
+              {t('footer_desc')}
             </p>
 
             {/* GitHub Project Showcase Pill */}
@@ -58,22 +61,22 @@ export const Footer = () => {
             <ul className="space-y-2.5 text-xs">
               <li>
                 <Link to="/available-food" className="hover:text-white hover:translate-x-0.5 inline-flex items-center gap-1 transition-all">
-                  <span>Available Food Feed</span>
+                  <span>{t('available_food')}</span>
                 </Link>
               </li>
               <li>
                 <Link to="/matching" className="hover:text-white hover:translate-x-0.5 inline-flex items-center gap-1 transition-all">
-                  <span>AI Matching Engine</span>
+                  <span>{t('ai_matching')}</span>
                 </Link>
               </li>
               <li>
                 <Link to="/impact" className="hover:text-white hover:translate-x-0.5 inline-flex items-center gap-1 transition-all">
-                  <span>Sustainability Impact</span>
+                  <span>{t('impact_tracker')}</span>
                 </Link>
               </li>
               <li>
                 <Link to="/hotspots" className="hover:text-white hover:translate-x-0.5 inline-flex items-center gap-1 transition-all">
-                  <span>Waste Hotspot Intelligence</span>
+                  <span>{t('waste_hotspots')}</span>
                 </Link>
               </li>
             </ul>
@@ -88,22 +91,22 @@ export const Footer = () => {
             <ul className="space-y-2.5 text-xs">
               <li>
                 <Link to="/donor-dashboard" className="hover:text-white hover:translate-x-0.5 inline-flex items-center gap-1 transition-all">
-                  <span>Food Donor Portal</span>
+                  <span>{t('food_donor')} {t('dashboard')}</span>
                 </Link>
               </li>
               <li>
                 <Link to="/receiver-dashboard" className="hover:text-white hover:translate-x-0.5 inline-flex items-center gap-1 transition-all">
-                  <span>Receiver Shelter Portal</span>
+                  <span>{t('receiver')} {t('dashboard')}</span>
                 </Link>
               </li>
               <li>
                 <Link to="/add-donation" className="hover:text-white hover:translate-x-0.5 inline-flex items-center gap-1 transition-all">
-                  <span>List Surplus Batch</span>
+                  <span>{t('btn_donate')}</span>
                 </Link>
               </li>
               <li>
                 <Link to="/login" className="hover:text-white hover:translate-x-0.5 inline-flex items-center gap-1 transition-all">
-                  <span>Account Authentication</span>
+                  <span>{t('sign_in')}</span>
                 </Link>
               </li>
             </ul>
@@ -134,7 +137,7 @@ export const Footer = () => {
 
         {/* Bottom copyright & attribution bar */}
         <div className="pt-8 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between text-xs text-[#E8F5ED]/60 gap-4">
-          <p>© 2026 FoodBridge AI. Powered by Intelligent Algorithmic Redistribution.</p>
+          <p>© 2026 FoodBridge AI. {t('footer_rights')}</p>
 
           <div className="flex items-center gap-4 flex-wrap justify-center">
             <a

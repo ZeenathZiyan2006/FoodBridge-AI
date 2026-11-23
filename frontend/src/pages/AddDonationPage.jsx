@@ -34,8 +34,18 @@ export const AddDonationPage = () => {
   const [quantityUnit, setQuantityUnit] = useState('Meals');
   const [dietaryType, setDietaryType] = useState('Vegetarian');
 
-  const nowStr = new Date().toISOString().slice(0, 16);
-  const inFourHoursStr = new Date(Date.now() + 4 * 3600 * 1000).toISOString().slice(0, 16);
+  const toLocalISOString = (date) => {
+    const pad = (n) => String(n).padStart(2, '0');
+    const year = date.getFullYear();
+    const month = pad(date.getMonth() + 1);
+    const day = pad(date.getDate());
+    const hours = pad(date.getHours());
+    const minutes = pad(date.getMinutes());
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  };
+
+  const nowStr = toLocalISOString(new Date());
+  const inFourHoursStr = toLocalISOString(new Date(Date.now() + 4 * 3600 * 1000));
 
   const [prepTime, setPrepTime] = useState(nowStr);
   const [consumptionDeadline, setConsumptionDeadline] = useState(inFourHoursStr);

@@ -16,10 +16,10 @@ def compute_donation_urgency(donation: FoodDonation) -> tuple[str, float]:
     """Computes urgency tier and remaining hours dynamically."""
     now = datetime.datetime.utcnow()
     diff = (donation.consumption_deadline - now).total_seconds()
-    hours_left = round(diff / 3600.0, 1)
+    hours_left = max(0.0, round(diff / 3600.0, 1))
 
-    if hours_left <= 0:
-        return "Expired", hours_left
+    if diff <= 0:
+        return "Expired", 0.0
     elif hours_left <= 2.0:
         return "Critical", hours_left
     elif hours_left <= 5.0:

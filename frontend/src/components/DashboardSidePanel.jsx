@@ -41,16 +41,21 @@ export const DashboardSidePanel = () => {
   const loadPanelData = async () => {
     setLoading(true);
     try {
-      const [sum, donList] = await Promise.all([
-        api.getSummary().catch(() => null),
-        api.getDonations({ limit: 8, status: 'Available', only_available: true }).catch(() => []),
-      ]);
+      const sum = await api.getSummary().catch(() => null);
       setSummary(sum);
-      // Only keep strictly fresh, unexpired available food in side panel feed
-      const activeUnexpired = (donList || []).filter(
-        (d) => d.status === 'Available' && d.hours_left > 0
-      );
-      setDonations(activeUnexpired.slice(0, 6));
+
+      if (user?.role === 'donor') {
+        // Donors only see their own listed food items
+        const myDons = await api.getMyDonations().catch(() => []);
+        setDonations(myDons || []);
+      } else {
+        // Receivers and guests see all available surplus food ready for collection
+        const donList = await api.getDonations({ limit: 12, status: 'Available', only_available: true }).catch(() => []);
+        const activeUnexpired = (donList || []).filter(
+          (d) => d.status === 'Available' && d.hours_left > 0 && ((d.remaining_quantity ?? d.quantity) > 0)
+        );
+        setDonations(activeUnexpired.slice(0, 6));
+      }
 
       if (user?.role === 'receiver') {
         const [reqs, feed] = await Promise.all([
@@ -60,8 +65,13 @@ export const DashboardSidePanel = () => {
         setMyRequests(reqs);
         setReceiverFeed(feed.slice(0, 4));
       } else if (user?.role === 'donor') {
-        const reqs = await api.getMyRequests().catch(() => []);
-        setMyRequests(reqs);
+        const myDons = await api.getMyDonations().catch(() => []);
+        let allIncoming = [];
+        for (const d of (myDons || []).slice(0, 5)) {
+          const reqs = await api.getDonationRequests(d.id).catch(() => []);
+          allIncoming = [...allIncoming, ...(reqs || [])];
+        }
+        setMyRequests(allIncoming);
       }
     } catch (err) {
       console.error('Error loading dashboard side panel data:', err);
@@ -358,10 +368,10 @@ export const DashboardSidePanel = () => {
                 <div>
                   <div className="flex items-center justify-between mb-2.5">
                     <h4 className="font-heading text-xs font-bold text-[#202B25] uppercase tracking-wider">
-                      Recent Surplus Listings
+                      {user?.role === 'donor' ? 'My Listed Surplus Batches' : 'Recent Surplus Listings'}
                     </h4>
                     <Link
-                      to="/available-food"
+                      to={user?.role === 'donor' ? '/donor-dashboard' : '/available-food'}
                       onClick={() => setDashboardPanelOpen(false)}
                       className="text-[11px] font-bold text-[#16865B] hover:underline"
                     >

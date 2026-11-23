@@ -14,7 +14,10 @@ const CATEGORY_FALLBACK_IMAGES = {
 };
 
 export const FoodCard = ({ donation, onRequest, matchScore, receiverView = false }) => {
-  const isExpired = donation.status === 'Expired' || donation.hours_left <= 0;
+  const isExpired = donation.status === 'Expired' || (donation.hours_left !== undefined && donation.hours_left !== null && donation.hours_left <= 0);
+  const remQty = donation.remaining_quantity !== null && donation.remaining_quantity !== undefined ? donation.remaining_quantity : donation.quantity;
+  const isAlreadyRequested = donation.status !== 'Available' || remQty <= 0;
+  const isUnavailable = isExpired || isAlreadyRequested;
   const fallbackImg = CATEGORY_FALLBACK_IMAGES[donation.category] || CATEGORY_FALLBACK_IMAGES['Other'];
 
   return (
@@ -34,7 +37,7 @@ export const FoodCard = ({ donation, onRequest, matchScore, receiverView = false
 
           {/* Top Badges */}
           <div className="absolute top-3 left-3 flex flex-wrap gap-1.5 items-center">
-            <StatusBadge status={donation.status} urgencyLevel={donation.urgency_level} />
+            <StatusBadge status={donation.status} urgencyLevel={donation.urgency_level} receiverView={receiverView} />
             <span className="px-2.5 py-0.5 rounded-full text-[10px] font-heading font-bold bg-white/95 backdrop-blur-md text-[#202B25] shadow-2xs border border-white/40">
               {donation.category}
             </span>
@@ -59,10 +62,12 @@ export const FoodCard = ({ donation, onRequest, matchScore, receiverView = false
           <div className="absolute bottom-3 left-3 text-white">
             <div className="flex items-center gap-1.5">
               <span className="font-heading text-lg font-extrabold tracking-tight drop-shadow-sm text-white">
-                {donation.remaining_quantity !== null && donation.remaining_quantity !== undefined ? donation.remaining_quantity : donation.quantity} {donation.quantity_unit}
+                {remQty} {donation.quantity_unit}
               </span>
-              <span className="text-[10px] font-medium bg-[#16865B]/80 px-2 py-0.5 rounded-md backdrop-blur-xs text-[#E8F5ED]">
-                Available
+              <span className={`text-[10px] font-medium px-2 py-0.5 rounded-md backdrop-blur-xs ${
+                isUnavailable ? 'bg-gray-800/80 text-gray-200' : 'bg-[#16865B]/80 text-[#E8F5ED]'
+              }`}>
+                {isExpired ? 'Unavailable' : isAlreadyRequested ? 'Requested' : 'Available'}
               </span>
             </div>
           </div>
@@ -105,7 +110,9 @@ export const FoodCard = ({ donation, onRequest, matchScore, receiverView = false
               <Clock className="w-3.5 h-3.5 text-[#16865B] shrink-0" />
               <span>
                 {isExpired ? (
-                  <span className="text-rose-600 font-bold">Expired</span>
+                  <span className="text-rose-600 font-bold">Unavailable (Expired)</span>
+                ) : isAlreadyRequested ? (
+                  <span className="text-amber-700 font-bold">Unavailable (Requested)</span>
                 ) : (
                   <span>
                     Deadline: <strong className={donation.hours_left <= 3 ? 'text-[#9A6217] font-bold' : 'text-[#202B25]'}>
@@ -132,10 +139,10 @@ export const FoodCard = ({ donation, onRequest, matchScore, receiverView = false
         {receiverView && (
           <button
             onClick={() => onRequest && onRequest(donation)}
-            disabled={isExpired || donation.status !== 'Available'}
+            disabled={isUnavailable}
             className="py-2.5 px-4 rounded-full bg-[#123C2D] hover:bg-[#16865B] text-white text-xs font-heading font-bold shadow-md shadow-[#123C2D]/15 transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer active:scale-95"
           >
-            {isExpired ? 'Expired' : donation.status === 'Available' ? 'Request' : donation.status}
+            {isExpired ? 'Unavailable' : isAlreadyRequested ? 'Unavailable' : 'Request'}
           </button>
         )}
 

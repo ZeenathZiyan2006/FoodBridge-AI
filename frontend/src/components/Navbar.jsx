@@ -99,8 +99,14 @@ export const Navbar = () => {
     return '/';
   };
 
+  const homePath = user?.role === 'donor'
+    ? '/donor-dashboard'
+    : user?.role === 'receiver'
+    ? '/receiver-dashboard'
+    : '/';
+
   const navLinks = [
-    { name: t('home'), path: '/' },
+    { name: t('home'), path: homePath },
     { name: t('available_food'), path: '/available-food' },
     { name: t('ai_matching'), path: '/matching' },
     { name: t('impact_tracker'), path: '/impact' },
@@ -111,8 +117,8 @@ export const Navbar = () => {
     <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-[#123C2D]/8 shadow-xs">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-18">
-          {/* Logo on the left with a beautiful green leaf icon */}
-          <Link to="/" className="flex items-center gap-3 group">
+          {/* Logo on the left with dynamic home redirection based on role */}
+          <Link to={homePath} className="flex items-center gap-3 group">
             <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-[#123C2D] to-[#16865B] text-white flex items-center justify-center shadow-md shadow-[#123C2D]/15 transition-all duration-300 group-hover:scale-105 group-hover:shadow-lg group-hover:shadow-[#16865B]/25">
               <Leaf className="w-5 h-5 text-[#E8F5ED]" />
             </div>

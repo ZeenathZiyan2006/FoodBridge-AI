@@ -59,13 +59,19 @@ def get_personalized_receiver_matches(
     scored_donations = []
 
     for d in donations:
+        urg_score, hours_left, urg_tier = calculate_urgency_score(d.consumption_deadline)
+        rem = d.remaining_quantity if d.remaining_quantity is not None else d.quantity
+
+        # Requirement 7: Strictly exclude expired, exhausted, or unavailable food from receiver recommendations
+        if hours_left <= 0 or urg_tier == "Expired" or rem <= 0:
+            continue
+
         don_lat, don_lon = resolve_location_coordinates(
             d.pickup_location, d.latitude, d.longitude
         )
 
         loc_score, dist_km = calculate_location_compatibility(don_lat, don_lon, rec_lat, rec_lon)
-        qty_score, qty_ratio = calculate_quantity_compatibility(d.quantity, rec_capacity)
-        urg_score, hours_left, urg_tier = calculate_urgency_score(d.consumption_deadline)
+        qty_score, qty_ratio = calculate_quantity_compatibility(rem, rec_capacity)
         pref_score, pref_match = calculate_preference_compatibility(d.dietary_type, rec_diet)
 
         if not pref_match and pref_score == 0:
