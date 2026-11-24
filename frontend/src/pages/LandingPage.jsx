@@ -31,6 +31,7 @@ import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { FoodCard } from '../components/FoodCard';
 import { SafetyBanner } from '../components/SafetyBanner';
+import { HowFoodBridgeWorks } from '../components/HowFoodBridgeWorks';
 
 export const LandingPage = () => {
   const { user, showToast } = useAuth();
@@ -302,100 +303,10 @@ export const LandingPage = () => {
         </div>
       </section>
 
-      {/* 3. HOW IT WORKS SECTION – 3 Beautiful Nature Green Cards */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center max-w-2xl mx-auto mb-12 space-y-2.5">
-          <span className="text-xs font-heading font-bold uppercase tracking-wider text-[#123C2D] bg-[#E8F5ED] px-3.5 py-1 rounded-full border border-[#16865B]/25">
-            {t('process_badge')}
-          </span>
-          <h2 className="font-heading text-3xl sm:text-4xl font-extrabold text-[#123C2D]">
-            {t('process_title')}
-          </h2>
-          <p className="text-xs sm:text-sm text-[#718078]">
-            {t('process_subtitle')}
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {/* Card 1: Donate Food */}
-          <div className="bg-white rounded-3xl p-8 border border-[#123C2D]/8 shadow-[0_4px_20px_-4px_rgba(18,60,45,0.04)] hover:shadow-[0_16px_36px_-6px_rgba(18,60,45,0.1)] hover:border-[#16865B]/30 hover:-translate-y-1.5 transition-all duration-300 flex flex-col justify-between group">
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="font-mono text-3xl font-black text-[#123C2D]/20 group-hover:text-[#16865B]/40 transition-colors">
-                  01
-                </span>
-                <div className="w-12 h-12 rounded-2xl bg-[#E8F5ED] text-[#123C2D] flex items-center justify-center group-hover:bg-[#16865B] group-hover:text-white transition-all duration-300 shadow-2xs">
-                  <Utensils className="w-6 h-6" />
-                </div>
-              </div>
-              <h3 className="font-heading text-lg font-bold text-[#123C2D]">
-                {t('step1_title')}
-              </h3>
-              <p className="text-xs text-[#718078] leading-relaxed">
-                {t('step1_desc')}
-              </p>
-            </div>
-            <div className="mt-6 pt-4 border-t border-[#123C2D]/6">
-              <span className="text-[11px] font-heading font-bold text-[#16865B] flex items-center gap-1 group-hover:translate-x-1 transition-transform">
-                <span>{t('fssai_badge')}</span>
-                <ChevronRight className="w-3.5 h-3.5" />
-              </span>
-            </div>
-          </div>
-
-          {/* Card 2: AI Matching */}
-          <div className="bg-white rounded-3xl p-8 border border-[#123C2D]/8 shadow-[0_4px_20px_-4px_rgba(18,60,45,0.04)] hover:shadow-[0_16px_36px_-6px_rgba(18,60,45,0.1)] hover:border-[#16865B]/30 hover:-translate-y-1.5 transition-all duration-300 flex flex-col justify-between group">
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="font-mono text-3xl font-black text-[#123C2D]/20 group-hover:text-[#16865B]/40 transition-colors">
-                  02
-                </span>
-                <div className="w-12 h-12 rounded-2xl bg-[#E8F5ED] text-[#16865B] flex items-center justify-center group-hover:bg-[#16865B] group-hover:text-white transition-all duration-300 shadow-2xs">
-                  <Sparkles className="w-6 h-6" />
-                </div>
-              </div>
-              <h3 className="font-heading text-lg font-bold text-[#123C2D]">
-                {t('step2_title')}
-              </h3>
-              <p className="text-xs text-[#718078] leading-relaxed">
-                {t('step2_desc')}
-              </p>
-            </div>
-            <div className="mt-6 pt-4 border-t border-[#123C2D]/6">
-              <span className="text-[11px] font-heading font-bold text-[#16865B] flex items-center gap-1 group-hover:translate-x-1 transition-transform">
-                <span>{t('tag_matching')}</span>
-                <ChevronRight className="w-3.5 h-3.5" />
-              </span>
-            </div>
-          </div>
-
-          {/* Card 3: Share Hope */}
-          <div className="bg-white rounded-3xl p-8 border border-[#123C2D]/8 shadow-[0_4px_20px_-4px_rgba(18,60,45,0.04)] hover:shadow-[0_16px_36px_-6px_rgba(18,60,45,0.1)] hover:border-[#16865B]/30 hover:-translate-y-1.5 transition-all duration-300 flex flex-col justify-between group">
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="font-mono text-3xl font-black text-[#123C2D]/20 group-hover:text-[#16865B]/40 transition-colors">
-                  03
-                </span>
-                <div className="w-12 h-12 rounded-2xl bg-[#E8F5ED] text-[#123C2D] flex items-center justify-center group-hover:bg-[#16865B] group-hover:text-white transition-all duration-300 shadow-2xs">
-                  <HeartHandshake className="w-6 h-6 text-[#16865B]" />
-                </div>
-              </div>
-              <h3 className="font-heading text-lg font-bold text-[#123C2D]">
-                {t('step3_title')}
-              </h3>
-              <p className="text-xs text-[#718078] leading-relaxed">
-                {t('step3_desc')}
-              </p>
-            </div>
-            <div className="mt-6 pt-4 border-t border-[#123C2D]/6">
-              <span className="text-[11px] font-heading font-bold text-[#16865B] flex items-center gap-1 group-hover:translate-x-1 transition-transform">
-                <span>{t('tag_mission')}</span>
-                <ChevronRight className="w-3.5 h-3.5" />
-              </span>
-            </div>
-          </div>
-        </div>
-      </section>
+      {/* 3. HOW FOODBRIDGE AI WORKS – 5-Step Automated Architecture */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <HowFoodBridgeWorks />
+      </div>
 
       {/* 4. WHY CHOOSE FOODBRIDGE AI – 6 Premium Cards */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

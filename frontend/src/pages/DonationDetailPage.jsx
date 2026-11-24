@@ -17,7 +17,10 @@ import {
   AlertCircle,
   Navigation,
   ExternalLink,
-  Store
+  Store,
+  Leaf,
+  Bell,
+  Droplets
 } from 'lucide-react';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
@@ -41,6 +44,7 @@ export const DonationDetailPage = () => {
   const [requestQty, setRequestQty] = useState('');
   const [requestMsg, setRequestMsg] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [broadcastingAlert, setBroadcastingAlert] = useState(false);
 
   const loadDonation = async () => {
     setLoading(true);
@@ -63,6 +67,18 @@ export const DonationDetailPage = () => {
   useEffect(() => {
     loadDonation();
   }, [id]);
+
+  const handleBroadcastAlert = async () => {
+    setBroadcastingAlert(true);
+    try {
+      const res = await api.notifyUrgentDonation(donation.id);
+      showToast(res.message || 'Urgent proximity alert sent to nearby verified receivers!', 'success');
+    } catch (err) {
+      showToast(err.message || 'Failed to dispatch alert', 'error');
+    } finally {
+      setBroadcastingAlert(false);
+    }
+  };
 
   const handleRequestSubmit = async (e) => {
     e.preventDefault();
@@ -285,6 +301,20 @@ export const DonationDetailPage = () => {
 
           {/* Action Buttons */}
           <div className="space-y-3 pt-2">
+            {/* Urgent Proximity Notification Trigger for Donors */}
+            {user?.role === 'donor' && donation.status === 'Available' && (
+              <button
+                type="button"
+                onClick={handleBroadcastAlert}
+                disabled={broadcastingAlert}
+                className="w-full py-3 px-4 rounded-full bg-[#FEF7EC] hover:bg-[#FDF0D9] text-[#9A6217] border border-[#E9A23B]/40 font-heading font-bold text-xs transition flex items-center justify-center gap-2 cursor-pointer active:scale-98"
+                title="Send automated push notification to nearby verified receivers"
+              >
+                <Bell className="w-4 h-4 text-[#E9A23B] animate-pulse" />
+                <span>{broadcastingAlert ? 'Dispatching Proximity Alert...' : 'Notify Nearby Verified Receivers'}</span>
+              </button>
+            )}
+
             <button
               onClick={() => setRequestModalOpen(true)}
               disabled={isExpired || donation.status !== 'Available' || remainingQty <= 0}
@@ -304,11 +334,41 @@ export const DonationDetailPage = () => {
 
             <Link
               to={`/matching?donationId=${donation.id}`}
-              className="w-full py-3 px-4 rounded-full bg-[#FEF7EC] hover:bg-[#FDF0D9] text-[#9A6217] font-heading font-bold text-xs border border-[#E9A23B]/35 transition-all flex items-center justify-center gap-2"
+              className="w-full py-3 px-4 rounded-full bg-white hover:bg-[#F8FAF7] text-[#123C2D] font-heading font-bold text-xs border border-[#123C2D]/15 transition-all flex items-center justify-center gap-2"
             >
               <Sparkles className="w-3.5 h-3.5 text-[#E9A23B]" />
               <span>Run AI Matching For This Batch</span>
             </Link>
+
+            {/* Display Positive Impact Created by This Donation */}
+            <div className="p-4 bg-gradient-to-br from-[#E8F5ED] to-white rounded-2xl border border-[#16865B]/20 space-y-2 mt-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#123C2D] flex items-center gap-1.5">
+                  <Leaf className="w-3.5 h-3.5 text-[#16865B]" />
+                  <span>Positive Environmental & Social Impact</span>
+                </span>
+                <span className="text-[10px] font-bold text-[#16865B] bg-white px-2 py-0.5 rounded-full border border-[#16865B]/20 font-mono">
+                  UN SDG 12.3
+                </span>
+              </div>
+              <div className="grid grid-cols-3 gap-2 text-center pt-1">
+                <div className="bg-white/80 p-2 rounded-xl border border-[#16865B]/10">
+                  <span className="text-[9px] font-mono text-[#718078] block">Meals Saved</span>
+                  <span className="font-heading font-extrabold text-[#123C2D] text-sm">{donation.quantity}</span>
+                  <span className="text-[9px] text-[#718078] block">People Fed</span>
+                </div>
+                <div className="bg-white/80 p-2 rounded-xl border border-[#16865B]/10">
+                  <span className="text-[9px] font-mono text-[#718078] block">CO₂e Averted</span>
+                  <span className="font-heading font-extrabold text-[#16865B] text-sm">{Math.round(donation.quantity * 2.5)} kg</span>
+                  <span className="text-[9px] text-[#718078] block">GHG Emissions</span>
+                </div>
+                <div className="bg-white/80 p-2 rounded-xl border border-[#16865B]/10">
+                  <span className="text-[9px] font-mono text-[#718078] block">Water Saved</span>
+                  <span className="font-heading font-extrabold text-[#123C2D] text-sm">{Math.round(donation.quantity * 350)} L</span>
+                  <span className="text-[9px] text-[#718078] block">Freshwater</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>

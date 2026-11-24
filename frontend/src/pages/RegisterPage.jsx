@@ -169,33 +169,58 @@ export const RegisterPage = () => {
               </p>
             </div>
 
-            {/* Role Selection Tabs (Only 2 Roles: Donor and Receiver) */}
-            <div className="grid grid-cols-2 p-1.5 bg-[#F8FAF7] rounded-full border border-[#123C2D]/8">
-              <button
-                type="button"
-                onClick={() => setRole('donor')}
-                className={`py-2.5 px-4 rounded-full text-xs font-heading font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+            {/* TWO PRIMARY OPTIONS: SIGN UP IN DONOR'S ACCOUNT OR RECEIVER'S ACCOUNT */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-heading font-extrabold text-[#202B25] uppercase tracking-wider">
+                  Select Registration Option:
+                </span>
+                <span className={`text-[10px] font-mono px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider ${
                   role === 'donor'
-                    ? 'bg-[#123C2D] text-white shadow-xs'
-                    : 'text-[#718078] hover:text-[#123C2D]'
-                }`}
-              >
-                <Utensils className="w-4 h-4" />
-                <span>Food Donor</span>
-              </button>
+                    ? 'bg-[#E8F5ED] text-[#123C2D] border border-[#16865B]/20'
+                    : 'bg-[#FEF7EC] text-[#9A6217] border border-[#E9A23B]/30'
+                }`}>
+                  Selected: {role === 'donor' ? "Donor's Account" : "Receiver's Account"}
+                </span>
+              </div>
 
-              <button
-                type="button"
-                onClick={() => setRole('receiver')}
-                className={`py-2.5 px-4 rounded-full text-xs font-heading font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
-                  role === 'receiver'
-                    ? 'bg-[#123C2D] text-white shadow-xs'
-                    : 'text-[#718078] hover:text-[#123C2D]'
-                }`}
-              >
-                <HeartHandshake className="w-4 h-4" />
-                <span>Food Receiver (Shelter)</span>
-              </button>
+              <div className="grid grid-cols-2 gap-2.5 p-1.5 bg-[#F8FAF7] rounded-2xl border border-[#123C2D]/12">
+                <button
+                  type="button"
+                  onClick={() => { setRole('donor'); setError(''); }}
+                  className={`py-3 px-3 rounded-xl text-xs font-heading font-extrabold transition-all flex flex-col sm:flex-row items-center justify-center gap-2 cursor-pointer ${
+                    role === 'donor'
+                      ? 'bg-[#123C2D] text-white shadow-md shadow-[#123C2D]/20 scale-[1.01]'
+                      : 'text-[#718078] hover:text-[#123C2D] hover:bg-white/70'
+                  }`}
+                >
+                  <Utensils className={`w-4 h-4 shrink-0 ${role === 'donor' ? 'text-[#42B883]' : 'text-[#16865B]'}`} />
+                  <div className="text-center sm:text-left leading-tight">
+                    <div className="text-xs font-bold">Sign Up in Donor's Account</div>
+                    <div className={`text-[10px] font-normal ${role === 'donor' ? 'text-[#E8F5ED]/80' : 'text-[#718078]'}`}>
+                      Kitchens & Canteens
+                    </div>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => { setRole('receiver'); setError(''); }}
+                  className={`py-3 px-3 rounded-xl text-xs font-heading font-extrabold transition-all flex flex-col sm:flex-row items-center justify-center gap-2 cursor-pointer ${
+                    role === 'receiver'
+                      ? 'bg-[#123C2D] text-white shadow-md shadow-[#123C2D]/20 scale-[1.01]'
+                      : 'text-[#718078] hover:text-[#123C2D] hover:bg-white/70'
+                  }`}
+                >
+                  <HeartHandshake className={`w-4 h-4 shrink-0 ${role === 'receiver' ? 'text-[#E9A23B]' : 'text-[#9A6217]'}`} />
+                  <div className="text-center sm:text-left leading-tight">
+                    <div className="text-xs font-bold">Sign Up in Receiver's Account</div>
+                    <div className={`text-[10px] font-normal ${role === 'receiver' ? 'text-[#E8F5ED]/80' : 'text-[#718078]'}`}>
+                      Shelters & NGOs
+                    </div>
+                  </div>
+                </button>
+              </div>
             </div>
 
             {error && (
@@ -484,15 +509,15 @@ export const RegisterPage = () => {
                 disabled={loading}
                 className="w-full py-3.5 px-4 rounded-full bg-[#123C2D] hover:bg-[#16865B] text-white font-heading font-extrabold text-sm shadow-md shadow-[#123C2D]/20 hover:shadow-lg transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer active:scale-98 disabled:opacity-50 mt-2"
               >
-                {loading ? 'Creating Account...' : `Register as ${role === 'donor' ? 'Food Donor' : 'Receiver Shelter'}`}
+                {loading ? 'Creating Account...' : `Sign Up in ${role === 'donor' ? "Donor's Account" : "Receiver's Account"}`}
                 <ArrowRight className="w-4 h-4 text-[#E8F5ED]" />
               </button>
             </form>
 
             <div className="text-center pt-4 border-t border-gray-100 text-xs text-[#718078]">
               Already registered?{' '}
-              <Link to="/login" className="text-[#16865B] font-heading font-bold hover:underline">
-                Sign In to Your Dashboard →
+              <Link to={`/login?role=${role}`} className="text-[#16865B] font-heading font-bold hover:underline">
+                Sign In to {role === 'donor' ? "Donor's Account" : "Receiver's Account"} →
               </Link>
             </div>
           </div>

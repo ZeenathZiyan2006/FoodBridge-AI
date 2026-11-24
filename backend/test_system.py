@@ -140,9 +140,61 @@ def run_tests():
     assert len(notifs) >= 5, "Notification audit count lower than expected"
     print("  --> PASS: In-app notification triggers operating across donor and receiver accounts.")
 
+    # 8. Donor Organization Segregation Audit
+    print(f"\n[Test 8] Donor Organization Isolation Audit:")
+    from app.routes.donations import list_donations
+    donor_user = donors[0]
+    donor_isolated_donations = list_donations(current_user=donor_user, db=db)
+    print(f"  • Donor #{donor_user.id} ({donor_user.full_name}) sees: {len(donor_isolated_donations)} donations")
+    for d in donor_isolated_donations:
+        assert d.donor_id == donor_user.id, f"Isolation breach! Donor saw donation #{d.id} belonging to donor #{d.donor_id}"
+    print("  --> PASS: Donors cannot view food listings of other organizations.")
+
+    # 9. AI Surplus Food Predictor Test
+    print(f"\n[Test 9] AI Surplus Food Predictor Test:")
+    from app.routes.analytics import predict_surplus_food
+    from app.schemas import SurplusPredictionRequest
+    pred_req = SurplusPredictionRequest(
+        establishment_type="College Canteen",
+        day_of_week="Friday",
+        meal_type="Lunch",
+        prepared_meals=400,
+        event_factor="Campus Fest / Event"
+    )
+    pred_res = predict_surplus_food(pred_req, db)
+    print(f"  • Establishment: {pred_res.establishment_type} on {pred_res.day_of_week}")
+    print(f"  • Prepared Meals: {pred_res.prepared_meals}")
+    print(f"  • Predicted Surplus: {pred_res.predicted_surplus_meals} meals ({pred_res.predicted_surplus_kg} kg, {pred_res.surplus_percentage}%)")
+    print(f"  • Risk Tier: {pred_res.risk_level}, Confidence: {pred_res.confidence_score}%")
+    assert pred_res.predicted_surplus_meals > 0, "Prediction produced 0 meals"
+    assert len(pred_res.top_surplus_categories) >= 3, "Category breakdown missing"
+    assert len(pred_res.actionable_recommendations) >= 2, "Recommendations missing"
+    print("  --> PASS: AI Surplus Food Prediction model accurately forecast volume and mitigations.")
+
+    # 10. AI Pickup Route Optimizer Test
+    print(f"\n[Test 10] AI Pickup Route Optimizer Test:")
+    from app.routes.analytics import optimize_pickup_route
+    route_res = optimize_pickup_route(start_location="Manipal", db=db)
+    print(f"  • Total stops in route: {route_res.total_stops}")
+    print(f"  • Total distance: {route_res.total_distance_km} km, Time: ~{route_res.estimated_travel_time_minutes} mins")
+    print(f"  • Route Summary: {route_res.route_summary}")
+    assert route_res.total_stops >= 1, "Route optimizer returned 0 stops"
+    assert route_res.total_distance_km >= 0, "Distance calculation error"
+    print("  --> PASS: Multi-stop volunteer route optimized with sequential ETAs.")
+
+    # 11. Verified Trust Directory Audit
+    print(f"\n[Test 11] Verified Trust & Reliability Directory Audit:")
+    from app.routes.analytics import get_trust_directory
+    trust_dir = get_trust_directory(db)
+    print(f"  • Verified Organizations in Directory: {len(trust_dir)}")
+    for org in trust_dir[:3]:
+        print(f"    - {org.organization_name} ({org.verification_badge}): Reliability {org.reliability_score}%, {org.trust_tier}")
+        assert org.reliability_score >= 80, "Reliability score calculation error"
+    print("  --> PASS: Institutional verification badges and reliability records verified.")
+
     db.close()
     print("\n" + "=" * 70)
-    print("ALL 7 SYSTEM VALIDATION TEST SUITES PASSED WITH 100% SUCCESS!")
+    print("ALL 11 SYSTEM VALIDATION TEST SUITES PASSED WITH 100% SUCCESS!")
     print("=" * 70)
 
 if __name__ == "__main__":

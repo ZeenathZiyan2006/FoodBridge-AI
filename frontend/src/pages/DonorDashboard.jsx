@@ -26,6 +26,7 @@ import { useAuth } from '../context/AuthContext';
 import { StatusBadge } from '../components/StatusBadge';
 import { ConfirmationModal } from '../components/ConfirmationModal';
 import { SafetyBanner } from '../components/SafetyBanner';
+import { SurplusPredictorModal } from '../components/SurplusPredictorModal';
 
 export const DonorDashboard = () => {
   const { user, deleteAccount, showToast } = useAuth();
@@ -43,6 +44,7 @@ export const DonorDashboard = () => {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [donationToDelete, setDonationToDelete] = useState(null);
   const [deleteAccountModalOpen, setDeleteAccountModalOpen] = useState(false);
+  const [surplusModalOpen, setSurplusModalOpen] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
 
   const loadMyDonations = async () => {
@@ -159,6 +161,16 @@ export const DonorDashboard = () => {
         </div>
 
         <div className="flex flex-wrap items-center gap-3 shrink-0">
+          <button
+            type="button"
+            onClick={() => setSurplusModalOpen(true)}
+            className="px-5 py-3 rounded-full bg-[#E8F5ED] hover:bg-[#16865B]/15 text-[#123C2D] border border-[#16865B]/30 font-heading font-bold text-xs sm:text-sm shadow-2xs hover:shadow-xs transition-all flex items-center gap-2 cursor-pointer active:scale-95"
+            title="Predict surplus food for your canteen or restaurant"
+          >
+            <Sparkles className="w-4 h-4 text-[#E9A23B]" />
+            <span>AI Surplus Predictor</span>
+          </button>
+
           <Link
             to="/add-donation"
             className="px-6 py-3 rounded-full bg-[#123C2D] hover:bg-[#16865B] text-white font-heading font-bold text-xs sm:text-sm shadow-md shadow-[#123C2D]/15 hover:shadow-lg transition-all flex items-center gap-2 cursor-pointer active:scale-95"
@@ -642,6 +654,13 @@ export const DonorDashboard = () => {
         isLoading={actionLoading}
         onConfirm={handleDeleteMyAccount}
         onCancel={() => setDeleteAccountModalOpen(false)}
+      />
+
+      {/* AI Surplus Predictor Modal */}
+      <SurplusPredictorModal
+        isOpen={surplusModalOpen}
+        onClose={() => setSurplusModalOpen(false)}
+        defaultEstablishment={user?.donor_profile?.organization_type || 'College Canteen'}
       />
     </div>
   );

@@ -79,6 +79,11 @@ export const Navbar = () => {
     }
   };
 
+  const handleSignOut = () => {
+    logout();
+    navigate('/login');
+  };
+
   const handleQuickSwitch = async (role) => {
     setDemoDropdownOpen(false);
     if (user) {
@@ -111,6 +116,7 @@ export const Navbar = () => {
     { name: t('ai_matching'), path: '/matching' },
     { name: t('impact_tracker'), path: '/impact' },
     { name: t('waste_hotspots'), path: '/hotspots' },
+    { name: 'Trust Network', path: '/trust' },
   ];
 
   return (
@@ -342,7 +348,7 @@ export const Navbar = () => {
 
                 <button
                   type="button"
-                  onClick={logout}
+                  onClick={handleSignOut}
                   className="p-2 text-[#718078] hover:text-rose-600 hover:bg-rose-50 rounded-full transition cursor-pointer"
                   title="Sign Out"
                 >
@@ -550,7 +556,7 @@ export const Navbar = () => {
                 </Link>
                 <button
                   onClick={() => {
-                    logout();
+                    handleSignOut();
                     setMobileMenuOpen(false);
                   }}
                   className="text-rose-600 font-bold text-xs hover:underline cursor-pointer"

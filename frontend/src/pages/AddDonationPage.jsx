@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import {
   Utensils,
   PlusCircle,
@@ -18,20 +18,23 @@ import {
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { SafetyBanner } from '../components/SafetyBanner';
+import { SurplusPredictorModal } from '../components/SurplusPredictorModal';
 
 export const AddDonationPage = () => {
   const { user, showToast } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [surplusModalOpen, setSurplusModalOpen] = useState(false);
 
-  // Form Fields
-  const [foodName, setFoodName] = useState('');
-  const [category, setCategory] = useState('Cooked Meals');
-  const [description, setDescription] = useState('');
-  const [quantity, setQuantity] = useState('');
-  const [quantityUnit, setQuantityUnit] = useState('Meals');
+  // Form Fields (can be prefilled from AI Surplus Predictor)
+  const [foodName, setFoodName] = useState(searchParams.get('mealTitle') || '');
+  const [category, setCategory] = useState(searchParams.get('prepCategory') || 'Cooked Meals');
+  const [description, setDescription] = useState(searchParams.get('notes') || '');
+  const [quantity, setQuantity] = useState(searchParams.get('predictedQty') || '');
+  const [quantityUnit, setQuantityUnit] = useState(searchParams.get('predictedUnit') || 'Meals');
   const [dietaryType, setDietaryType] = useState('Vegetarian');
 
   const toLocalISOString = (date) => {
@@ -136,13 +139,24 @@ export const AddDonationPage = () => {
       </div>
 
       <div className="bg-white rounded-3xl p-6 sm:p-10 border border-[#123C2D]/8 shadow-[0_4px_24px_-4px_rgba(18,60,45,0.04)] space-y-8">
-        <div>
-          <h1 className="font-heading text-2xl sm:text-3xl font-extrabold text-[#123C2D] tracking-tight">
-            List Surplus Food Donation
-          </h1>
-          <p className="text-xs sm:text-sm text-[#718078] mt-1">
-            Provide food details accurately so the AI matching engine can locate nearby orphanages and community shelters.
-          </p>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h1 className="font-heading text-2xl sm:text-3xl font-extrabold text-[#123C2D] tracking-tight">
+              List Surplus Food Donation
+            </h1>
+            <p className="text-xs sm:text-sm text-[#718078] mt-1">
+              Provide food details accurately so the AI matching engine can locate nearby orphanages and community shelters.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setSurplusModalOpen(true)}
+            className="px-4 py-2.5 rounded-full bg-[#E8F5ED] hover:bg-[#16865B]/15 text-[#123C2D] border border-[#16865B]/30 font-heading font-bold text-xs shadow-2xs transition flex items-center gap-2 cursor-pointer self-start sm:self-auto shrink-0"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-[#E9A23B]" />
+            <span>AI Surplus Predictor</span>
+          </button>
         </div>
 
         <SafetyBanner />
@@ -401,6 +415,13 @@ export const AddDonationPage = () => {
           </div>
         </form>
       </div>
+
+      {/* AI Surplus Predictor Modal */}
+      <SurplusPredictorModal
+        isOpen={surplusModalOpen}
+        onClose={() => setSurplusModalOpen(false)}
+        defaultEstablishment={user?.donor_profile?.organization_type || 'College Canteen'}
+      />
     </div>
   );
 };

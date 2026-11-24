@@ -15,11 +15,13 @@ import {
   Clock
 } from 'lucide-react';
 import { api } from '../services/api';
+import { PickupRouteOptimizerModal } from '../components/PickupRouteOptimizerModal';
 
 export const HotspotsPage = () => {
   const [hotspots, setHotspots] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedLocation, setSelectedLocation] = useState(null);
+  const [routeModalOpen, setRouteModalOpen] = useState(false);
 
   useEffect(() => {
     const loadHotspots = async () => {
@@ -137,13 +139,18 @@ export const HotspotsPage = () => {
                 </div>
 
                 <div className="flex items-center gap-3">
-                  <div className="bg-white px-4 py-2 rounded-xl border border-[#16865B]/20 text-center shadow-2xs">
+                  <button
+                    type="button"
+                    onClick={() => setRouteModalOpen(true)}
+                    className="bg-white hover:bg-[#E8F5ED] px-4 py-2 rounded-xl border border-[#16865B]/25 text-center shadow-2xs transition cursor-pointer group"
+                    title="Click to view AI-recommended multi-stop route for this node"
+                  >
                     <span className="text-[10px] font-heading font-bold text-[#718078] uppercase block">Van Route Priority</span>
-                    <span className="text-xs font-heading font-extrabold text-[#16865B] flex items-center justify-center gap-1 mt-0.5">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#16865B]" />
-                      Tier 1 Scheduled
+                    <span className="text-xs font-heading font-extrabold text-[#16865B] flex items-center justify-center gap-1.5 mt-0.5 group-hover:text-[#123C2D]">
+                      <Truck className="w-3.5 h-3.5 text-[#16865B]" />
+                      <span>Tier 1 Scheduled • Plan Route →</span>
                     </span>
-                  </div>
+                  </button>
                 </div>
               </div>
             )}
@@ -242,6 +249,12 @@ export const HotspotsPage = () => {
           </div>
         </div>
       )}
+
+      {/* AI Pickup Route Optimizer Modal */}
+      <PickupRouteOptimizerModal
+        isOpen={routeModalOpen}
+        onClose={() => setRouteModalOpen(false)}
+      />
     </div>
   );
 };

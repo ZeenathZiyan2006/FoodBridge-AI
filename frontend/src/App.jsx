@@ -20,6 +20,7 @@ import { AddDonationPage } from './pages/AddDonationPage';
 import { ReceiverDashboard } from './pages/ReceiverDashboard';
 import { HotspotsPage } from './pages/HotspotsPage';
 import { ImpactPage } from './pages/ImpactPage';
+import { TrustPage } from './pages/TrustPage';
 
 // Error Boundary to prevent blank page crashes
 class ErrorBoundary extends React.Component {
@@ -108,7 +109,10 @@ const RoleAccessDenied = ({ user, allowedRoles }) => {
           </Link>
 
           <button
-            onClick={logout}
+            onClick={() => {
+              logout();
+              window.location.href = '/login';
+            }}
             className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-gray-100 hover:bg-rose-50 hover:text-rose-700 text-gray-700 font-heading font-bold text-xs border border-gray-200 transition cursor-pointer"
           >
             Sign Out & Switch Account
@@ -158,6 +162,7 @@ function AppContent() {
           <Route path="/matching" element={<MatchingEnginePage />} />
           <Route path="/hotspots" element={<HotspotsPage />} />
           <Route path="/impact" element={<ImpactPage />} />
+          <Route path="/trust" element={<TrustPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
 

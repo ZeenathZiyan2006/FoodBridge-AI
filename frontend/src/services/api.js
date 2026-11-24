@@ -1,4 +1,6 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
+const API_BASE_URL = import.meta.env.VITE_API_URL !== undefined
+  ? import.meta.env.VITE_API_URL
+  : (import.meta.env.PROD ? '' : 'http://127.0.0.1:8000');
 
 // Helper for making fetch requests with Auth header and error handling
 async function request(endpoint, options = {}) {
@@ -83,6 +85,9 @@ export const api = {
   deleteDonation: (id) => request(`/api/donations/${id}`, {
     method: 'DELETE',
   }),
+  notifyUrgentDonation: (id) => request(`/api/donations/${id}/notify-urgent`, {
+    method: 'POST',
+  }),
 
   // Requests & Lifecycle
   createRequest: (data) => request('/api/requests', {
@@ -112,6 +117,14 @@ export const api = {
   toggleUserStatus: (userId) => request(`/api/analytics/admin/users/${userId}/toggle-status`, {
     method: 'PATCH',
   }),
+
+  // AI Surplus Prediction & Route Optimization
+  predictSurplus: (data) => request('/api/analytics/predict-surplus', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  }),
+  getOptimizedRoute: (startLocation = 'Manipal') => request(`/api/analytics/optimize-route?start_location=${encodeURIComponent(startLocation)}`),
+  getTrustDirectory: () => request('/api/analytics/trust-directory'),
 
   // Notifications
   getNotifications: () => request('/api/notifications'),

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Filter, Sparkles, Layers, ArrowLeft, SlidersHorizontal, CheckCircle2 } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Search, Filter, Sparkles, Layers, ArrowLeft, SlidersHorizontal, CheckCircle2, ShieldCheck, PlusCircle } from 'lucide-react';
 import { api } from '../services/api';
 import { FoodCard } from '../components/FoodCard';
 import { SafetyBanner } from '../components/SafetyBanner';
@@ -86,13 +87,15 @@ export const AvailableFoodPage = () => {
         <div>
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#E8F5ED] text-[#123C2D] text-xs font-heading font-extrabold border border-[#16865B]/20 shadow-2xs">
             <span className="w-2 h-2 rounded-full bg-[#16865B] animate-pulse" />
-            <span>Active Surplus Catalog</span>
+            <span>{user?.role === 'donor' ? "My Organization's Surplus Inventory" : "Active Surplus Catalog"}</span>
           </div>
           <h1 className="font-heading text-3xl sm:text-4xl font-extrabold text-[#123C2D] tracking-tight mt-2">
-            {t('available_title')}
+            {user?.role === 'donor' ? "My Surplus Food Batches" : t('available_title')}
           </h1>
           <p className="text-xs sm:text-sm text-[#718078] mt-1 max-w-2xl">
-            {t('available_subtitle')}
+            {user?.role === 'donor'
+              ? `Surplus food posted by ${user.full_name}. Under donor privacy isolation, food listings from other establishments are restricted.`
+              : t('available_subtitle')}
           </p>
         </div>
 
@@ -103,14 +106,36 @@ export const AvailableFoodPage = () => {
             <span className="relative inline-flex rounded-full h-2 w-2 bg-[#16865B]"></span>
           </span>
           <span className="text-xs font-heading font-extrabold text-[#123C2D]">
-            {sortedDonations.length} Active Batches
+            {sortedDonations.length} {user?.role === 'donor' ? 'My Listed Batches' : 'Active Batches'}
           </span>
           <span className="text-[#123C2D]/20">|</span>
           <span className="text-[11px] font-medium text-[#718078]">
-            FSSAI Verified
+            {user?.role === 'donor' ? 'Donor Isolation Active' : 'FSSAI Verified'}
           </span>
         </div>
       </div>
+
+      {/* Role Segregation Notice for Donors */}
+      {user?.role === 'donor' && (
+        <div className="p-4 bg-[#E8F5ED] border border-[#16865B]/30 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-[#123C2D] shadow-2xs animate-fade-in">
+          <div className="flex items-start sm:items-center gap-3">
+            <ShieldCheck className="w-5 h-5 text-[#16865B] shrink-0 mt-0.5 sm:mt-0" />
+            <div>
+              <strong className="font-heading font-extrabold text-[#123C2D]">Donor Organization Isolation Active:</strong>
+              <p className="text-[#202B25] text-[11px] mt-0.5">
+                You are viewing only food batches listed by your organization ({user.full_name}). Food listed by other canteens and restaurants is private and isolated.
+              </p>
+            </div>
+          </div>
+          <Link
+            to="/add-donation"
+            className="px-4 py-2 rounded-full bg-[#123C2D] hover:bg-[#16865B] text-white font-heading font-bold text-xs shadow-xs shrink-0 self-start sm:self-auto transition flex items-center gap-1.5"
+          >
+            <PlusCircle className="w-3.5 h-3.5 text-[#E8F5ED]" />
+            <span>List New Surplus Food</span>
+          </Link>
+        </div>
+      )}
 
       <SafetyBanner />
 
@@ -234,16 +259,30 @@ export const AvailableFoodPage = () => {
           <div className="w-14 h-14 rounded-2xl bg-[#E8F5ED] text-[#123C2D] flex items-center justify-center mx-auto">
             <Layers className="w-7 h-7 text-[#16865B]" />
           </div>
-          <h3 className="font-heading text-lg font-bold text-[#123C2D]">No Matching Food Found</h3>
+          <h3 className="font-heading text-lg font-bold text-[#123C2D]">
+            {user?.role === 'donor' ? 'No Active Batches Listed by Your Organization' : 'No Matching Food Found'}
+          </h3>
           <p className="text-xs text-[#718078] max-w-sm mx-auto leading-relaxed">
-            There are currently no active food listings matching your selected filters. Try broadening your criteria.
+            {user?.role === 'donor'
+              ? 'Your organization has no active surplus batches matching these filters. Other organizations’ food is protected by donor privacy.'
+              : 'There are currently no active food listings matching your selected filters. Try broadening your criteria.'}
           </p>
-          <button
-            onClick={handleResetFilters}
-            className="px-6 py-2.5 rounded-full bg-[#123C2D] hover:bg-[#16865B] text-white text-xs font-heading font-bold transition-all shadow-xs cursor-pointer"
-          >
-            Reset All Filters
-          </button>
+          <div className="flex items-center justify-center gap-3 pt-2">
+            {user?.role === 'donor' ? (
+              <Link
+                to="/add-donation"
+                className="px-6 py-2.5 rounded-full bg-[#123C2D] hover:bg-[#16865B] text-white text-xs font-heading font-bold transition-all shadow-xs"
+              >
+                + List Surplus Food Now
+              </Link>
+            ) : null}
+            <button
+              onClick={handleResetFilters}
+              className="px-6 py-2.5 rounded-full border border-gray-200 hover:bg-gray-50 text-[#718078] text-xs font-heading font-bold transition-all cursor-pointer"
+            >
+              Reset Filters
+            </button>
+          </div>
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">

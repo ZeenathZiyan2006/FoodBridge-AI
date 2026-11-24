@@ -8,7 +8,7 @@ from ..database import get_db
 from ..models import FoodDonation, User, DonationStatusHistory, Notification, FoodRequest
 from ..schemas import FoodDonationCreate, FoodDonationUpdate, FoodDonationOut
 from ..auth import get_current_user, get_optional_user, require_roles
-from ..matching_engine import resolve_location_coordinates
+from ..matching_engine import resolve_location_coordinates, haversine_distance
 
 router = APIRouter(prefix="/api/donations", tags=["Donations"])
 
@@ -50,16 +50,21 @@ def list_donations(
     category: Optional[str] = None,
     dietary_type: Optional[str] = None,
     location: Optional[str] = None,
-    status_filter: Optional[str] = Query(None, alias="status"),
+    status_filter: Optional[str] = None,
     search: Optional[str] = None,
     urgency: Optional[str] = None,
-    only_available: bool = Query(False),
+    only_available: bool = False,
     limit: int = 50,
+    current_user: Optional[User] = Depends(get_optional_user),
     db: Session = Depends(get_db)
 ):
     query = db.query(FoodDonation)
 
-    if status_filter:
+    # Strict Data Segregation / Privacy: Donors must not see food listings from other organizations
+    if current_user and current_user.role == "donor":
+        query = query.filter(FoodDonation.donor_id == current_user.id)
+
+    if status_filter and isinstance(status_filter, str):
         query = query.filter(FoodDonation.status == status_filter)
     elif only_available:
         query = query.filter(FoodDonation.status == "Available")
@@ -238,6 +243,53 @@ def update_donation(
     db.commit()
     db.refresh(donation)
     return enrich_donation_out(donation)
+
+@router.post("/{donation_id}/notify-urgent")
+def notify_urgent_collection(
+    donation_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Direct Urgent Alert Dispatch:
+    Notifies nearby verified receivers immediately that a food donation has an approaching
+    consumption deadline and requires immediate collection.
+    """
+    donation = db.query(FoodDonation).filter(FoodDonation.id == donation_id).first()
+    if not donation:
+        raise HTTPException(status_code=404, detail="Donation not found.")
+
+    urg_tier, hours_left = compute_donation_urgency(donation)
+    don_lat, don_lon = resolve_location_coordinates(donation.pickup_location, donation.latitude, donation.longitude)
+
+    receivers = db.query(User).filter(User.role == "receiver", User.is_active == True).all()
+    notified_count = 0
+    now = datetime.datetime.utcnow()
+
+    for rec in receivers:
+        rec_lat, rec_lon = resolve_location_coordinates(rec.location_name or rec.address, rec.latitude, rec.longitude)
+        dist = haversine_distance(don_lat, don_lon, rec_lat, rec_lon)
+        # Notify receivers within 15 km
+        if dist <= 15.0:
+            notif = Notification(
+                user_id=rec.id,
+                title="🚨 Urgent Food Collection Needed Nearby",
+                message=f"Critical pickup alert: {donation.quantity} {donation.quantity_unit} of '{donation.food_name}' in {donation.pickup_location} ({dist} km away). Safe window: ~{hours_left} hrs remaining!",
+                notification_type="deadline_alert",
+                is_read=False,
+                link=f"/donation/{donation.id}",
+                created_at=now
+            )
+            db.add(notif)
+            notified_count += 1
+
+    db.commit()
+    return {
+        "message": f"Urgent proximity collection alert broadcasted to {notified_count} nearby verified receivers.",
+        "notified_receivers_count": notified_count,
+        "hours_left": hours_left,
+        "urgency_level": urg_tier
+    }
 
 @router.delete("/{donation_id}")
 def delete_donation(

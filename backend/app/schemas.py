@@ -261,3 +261,71 @@ class ImpactMetricsOut(BaseModel):
     completed_donations: int
     urgent_donations: int
     expired_donations: int
+
+# AI Surplus Food Prediction Schemas
+class SurplusPredictionRequest(BaseModel):
+    establishment_type: str = "College Canteen"  # College Canteen, Hostel Mess, Restaurant, Hotel Banquet, Corporate Cafeteria
+    day_of_week: str = "Friday"
+    meal_type: str = "Lunch"
+    prepared_meals: int = 300
+    event_factor: str = "Normal Day"  # Normal Day, Exam Week, Campus Fest / Event, Weekend Outing, Heavy Rain / Weather
+
+class SurplusCategoryItem(BaseModel):
+    category: str
+    expected_meals: float
+    percentage: float
+
+class SurplusPredictionResponse(BaseModel):
+    establishment_type: str
+    day_of_week: str
+    meal_type: str
+    prepared_meals: int
+    predicted_surplus_meals: float
+    predicted_surplus_kg: float
+    surplus_percentage: float
+    confidence_score: float
+    risk_level: str  # Low, Medium, High, Critical
+    top_surplus_categories: List[SurplusCategoryItem]
+    actionable_recommendations: List[str]
+    forecast_timeline: List[dict]
+
+# AI Pickup Route Planner Schemas
+class RouteStop(BaseModel):
+    stop_number: int
+    stop_type: str  # "pickup" or "delivery"
+    location_name: str
+    address: str
+    contact_phone: Optional[str] = None
+    donation_id: Optional[int] = None
+    food_name: Optional[str] = None
+    quantity: Optional[float] = None
+    urgency_tier: Optional[str] = None
+    hours_left: Optional[float] = None
+    estimated_arrival_minutes: int
+    latitude: float
+    longitude: float
+
+class RouteOptimizationResponse(BaseModel):
+    total_stops: int
+    total_distance_km: float
+    estimated_travel_time_minutes: int
+    carbon_saved_kg: float
+    route_summary: str
+    stops: List[RouteStop]
+
+# Verified Trust & Reliability Schemas
+class OrganizationTrustProfile(BaseModel):
+    user_id: int
+    organization_name: str
+    role: str
+    verification_badge: str
+    verification_id: Optional[str] = None
+    reliability_score: float  # e.g. 98.5%
+    trust_tier: str  # "Gold Verified", "Silver Verified", "Pending Review"
+    completed_pickups: int
+    cancelled_pickups: int
+    missed_pickups: int
+    feedback_rating: float  # 0 to 5.0
+    feedback_count: int
+    flagged_for_review: bool
+    review_notes: Optional[str] = None

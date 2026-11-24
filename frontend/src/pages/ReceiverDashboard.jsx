@@ -24,6 +24,7 @@ import { FoodCard } from '../components/FoodCard';
 import { StatusBadge } from '../components/StatusBadge';
 import { SafetyBanner } from '../components/SafetyBanner';
 import { ConfirmationModal } from '../components/ConfirmationModal';
+import { PickupRouteOptimizerModal } from '../components/PickupRouteOptimizerModal';
 
 export const ReceiverDashboard = () => {
   const { user, deleteAccount, showToast } = useAuth();
@@ -36,6 +37,7 @@ export const ReceiverDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [deleteAccountModalOpen, setDeleteAccountModalOpen] = useState(false);
   const [deletingAccount, setDeletingAccount] = useState(false);
+  const [routeModalOpen, setRouteModalOpen] = useState(false);
 
   // Filters for browse tab
   const [searchTerm, setSearchTerm] = useState('');
@@ -180,9 +182,19 @@ export const ReceiverDashboard = () => {
         </div>
 
         <div className="flex flex-wrap items-center gap-3 shrink-0">
+          <button
+            type="button"
+            onClick={() => setRouteModalOpen(true)}
+            className="px-5 py-3 rounded-full bg-[#E8F5ED] hover:bg-[#16865B]/15 text-[#123C2D] border border-[#16865B]/30 font-heading font-bold text-xs sm:text-sm shadow-2xs transition-all flex items-center gap-2 cursor-pointer active:scale-95"
+            title="Calculate shortest multi-stop collection route for volunteers"
+          >
+            <Truck className="w-4 h-4 text-[#16865B]" />
+            <span>Pickup Route Optimizer</span>
+          </button>
+
           <Link
             to="/matching"
-            className="px-6 py-3 rounded-full bg-[#FEF7EC] hover:bg-[#FDF0D9] text-[#9A6217] font-heading font-bold text-xs sm:text-sm border border-[#E9A23B]/35 shadow-2xs transition-all flex items-center gap-2 cursor-pointer"
+            className="px-5 py-3 rounded-full bg-[#FEF7EC] hover:bg-[#FDF0D9] text-[#9A6217] font-heading font-bold text-xs sm:text-sm border border-[#E9A23B]/35 shadow-2xs transition-all flex items-center gap-2 cursor-pointer"
           >
             <Sparkles className="w-4 h-4 text-[#E9A23B]" />
             <span>AI Matching Simulator</span>
@@ -493,6 +505,12 @@ export const ReceiverDashboard = () => {
         isLoading={deletingAccount}
         onConfirm={handleDeleteMyAccount}
         onCancel={() => setDeleteAccountModalOpen(false)}
+      />
+
+      {/* AI Pickup Route Optimizer Modal */}
+      <PickupRouteOptimizerModal
+        isOpen={routeModalOpen}
+        onClose={() => setRouteModalOpen(false)}
       />
     </div>
   );

@@ -38,6 +38,19 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.middleware("http")
+async def normalize_api_path_middleware(request, call_next):
+    path = request.scope.get("path", "")
+    if (
+        not path.startswith("/api")
+        and not path.startswith("/docs")
+        and not path.startswith("/openapi.json")
+        and not path.startswith("/redoc")
+        and path != "/"
+    ):
+        request.scope["path"] = "/api" + path
+    return await call_next(request)
+
 # Register route modules
 app.include_router(auth.router)
 app.include_router(donations.router)
