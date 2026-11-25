@@ -12,15 +12,76 @@ from ..matching_engine import resolve_location_coordinates, haversine_distance
 
 router = APIRouter(prefix="/api/donations", tags=["Donations"])
 
+def _to_naive_utc(dt: datetime.datetime) -> datetime.datetime:
+    """Normalize aware or naive datetime to naive UTC."""
+    if dt.tzinfo is not None:
+        return dt.astimezone(datetime.timezone.utc).replace(tzinfo=None)
+    return dt
+
+
+def mark_expired_donations(db: Session) -> int:
+    """
+    Idempotently mark active/pending food donations as Expired once their
+    consumption_deadline has passed. Preserves records for history and analytics.
+    """
+    now = datetime.datetime.utcnow()
+    updated = 0
+
+    # Backfill expired_at for any existing Expired rows missing it
+    legacy_expired = db.query(FoodDonation).filter(
+        FoodDonation.status == "Expired",
+        FoodDonation.expired_at.is_(None)
+    ).all()
+    for d in legacy_expired:
+        d.expired_at = d.consumption_deadline or now
+        updated += 1
+
+    # Transition unreserved/unclaimed donations past expiry to Expired
+    newly_expired = db.query(FoodDonation).filter(
+        FoodDonation.status.in_(["Available", "Requested", "Allocated"]),
+        (FoodDonation.consumption_deadline.is_(None)) | (FoodDonation.consumption_deadline <= now)
+    ).all()
+
+    for d in newly_expired:
+        d.status = "Expired"
+        if d.expired_at is None:
+            d.expired_at = now
+        d.updated_at = now
+
+        open_requests = db.query(FoodRequest).filter(
+            FoodRequest.donation_id == d.id,
+            FoodRequest.status == "Requested"
+        ).all()
+        for req in open_requests:
+            req.status = "Expired"
+            req.updated_at = now
+
+        db.add(DonationStatusHistory(
+            donation_id=d.id,
+            status="Expired",
+            updated_by_user_id=None,
+            notes="Automatically marked as Expired after reaching consumption deadline.",
+            timestamp=now
+        ))
+        updated += 1
+
+    if updated > 0:
+        db.commit()
+    return updated
+
+
 def compute_donation_urgency(donation: FoodDonation) -> tuple[str, float]:
     """Computes urgency tier and remaining hours dynamically."""
-    now = datetime.datetime.utcnow()
-    diff = (donation.consumption_deadline - now).total_seconds()
-    hours_left = max(0.0, round(diff / 3600.0, 1))
+    if not donation.consumption_deadline or donation.status == "Expired":
+        return "Expired", 0.0
 
+    now = datetime.datetime.utcnow()
+    diff = (_to_naive_utc(donation.consumption_deadline) - now).total_seconds()
     if diff <= 0:
         return "Expired", 0.0
-    elif hours_left <= 2.0:
+
+    hours_left = max(0.1, round(diff / 3600.0, 1))
+    if hours_left <= 2.0:
         return "Critical", hours_left
     elif hours_left <= 5.0:
         return "Urgent", hours_left
@@ -31,10 +92,10 @@ def enrich_donation_out(donation: FoodDonation) -> FoodDonationOut:
     """Helper to attach computed urgency and hours_left to output schema."""
     urgency_tier, hours_left = compute_donation_urgency(donation)
     
-    # Auto-adjust status to Expired if passed deadline
+    # Auto-adjust status to Expired if passed deadline (preserve Completed/Collected/Cancelled)
     effective_status = donation.status
     rem = donation.remaining_quantity if donation.remaining_quantity is not None else donation.quantity
-    if hours_left <= 0:
+    if hours_left <= 0 and effective_status not in ("Completed", "Collected", "Cancelled"):
         effective_status = "Expired"
     elif rem <= 0 and effective_status == "Available":
         effective_status = "Allocated"
@@ -58,6 +119,7 @@ def list_donations(
     current_user: Optional[User] = Depends(get_optional_user),
     db: Session = Depends(get_db)
 ):
+    mark_expired_donations(db)
     query = db.query(FoodDonation)
 
     # Strict Data Segregation / Privacy: Donors must not see food listings from other organizations
@@ -117,7 +179,8 @@ def get_my_donations(
     current_user: User = Depends(require_roles(["donor", "admin"])),
     db: Session = Depends(get_db)
 ):
-    """Retrieve all donations listed by the logged-in donor."""
+    """Retrieve all donations (including historical expired/completed) listed by the logged-in donor."""
+    mark_expired_donations(db)
     donations = db.query(FoodDonation)\
         .filter(FoodDonation.donor_id == current_user.id)\
         .order_by(desc(FoodDonation.created_at))\
@@ -126,6 +189,7 @@ def get_my_donations(
 
 @router.get("/{donation_id}", response_model=FoodDonationOut)
 def get_donation(donation_id: int, db: Session = Depends(get_db)):
+    mark_expired_donations(db)
     donation = db.query(FoodDonation).filter(FoodDonation.id == donation_id).first()
     if not donation:
         raise HTTPException(status_code=404, detail="Donation not found.")
@@ -140,7 +204,9 @@ def create_donation(
     """Create a new food donation listing."""
     # Ensure deadline is in the future
     now = datetime.datetime.utcnow()
-    if donation_in.consumption_deadline.replace(tzinfo=None) <= now:
+    prep_utc = _to_naive_utc(donation_in.prep_time)
+    deadline_utc = _to_naive_utc(donation_in.consumption_deadline)
+    if deadline_utc <= now:
         raise HTTPException(
             status_code=400,
             detail="Consumption deadline must be a future time to guarantee food safety."
@@ -174,8 +240,8 @@ def create_donation(
         remaining_quantity=donation_in.quantity,
         quantity_unit=donation_in.quantity_unit,
         dietary_type=donation_in.dietary_type,
-        prep_time=donation_in.prep_time.replace(tzinfo=None),
-        consumption_deadline=donation_in.consumption_deadline.replace(tzinfo=None),
+        prep_time=prep_utc,
+        consumption_deadline=deadline_utc,
         storage_condition=donation_in.storage_condition,
         allergen_info=donation_in.allergen_info or "None reported",
         pickup_location=donation_in.pickup_location,
@@ -224,6 +290,7 @@ def update_donation(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
+    mark_expired_donations(db)
     donation = db.query(FoodDonation).filter(FoodDonation.id == donation_id).first()
     if not donation:
         raise HTTPException(status_code=404, detail="Donation not found.")
@@ -232,14 +299,30 @@ def update_donation(
     if donation.donor_id != current_user.id and current_user.role != "admin":
         raise HTTPException(status_code=403, detail="You do not have permission to edit this donation.")
 
+    now = datetime.datetime.utcnow()
     update_data = donation_update.dict(exclude_unset=True)
+
+    # Prevent expired listings from being reopened as Available
+    if donation.status == "Expired" or (donation.consumption_deadline and _to_naive_utc(donation.consumption_deadline) <= now):
+        if update_data.get("status") == "Available":
+            raise HTTPException(
+                status_code=400,
+                detail="Expired food listings cannot be made available again for food safety reasons."
+            )
+
     if "consumption_deadline" in update_data and update_data["consumption_deadline"]:
-        update_data["consumption_deadline"] = update_data["consumption_deadline"].replace(tzinfo=None)
+        new_deadline = _to_naive_utc(update_data["consumption_deadline"])
+        if new_deadline <= now:
+            raise HTTPException(
+                status_code=400,
+                detail="Consumption deadline must be in the future."
+            )
+        update_data["consumption_deadline"] = new_deadline
 
     for field, value in update_data.items():
         setattr(donation, field, value)
 
-    donation.updated_at = datetime.datetime.utcnow()
+    donation.updated_at = now
     db.commit()
     db.refresh(donation)
     return enrich_donation_out(donation)
@@ -255,11 +338,14 @@ def notify_urgent_collection(
     Notifies nearby verified receivers immediately that a food donation has an approaching
     consumption deadline and requires immediate collection.
     """
+    mark_expired_donations(db)
     donation = db.query(FoodDonation).filter(FoodDonation.id == donation_id).first()
     if not donation:
         raise HTTPException(status_code=404, detail="Donation not found.")
 
     urg_tier, hours_left = compute_donation_urgency(donation)
+    if donation.status == "Expired" or urg_tier == "Expired" or hours_left <= 0:
+        raise HTTPException(status_code=400, detail="Cannot send collection alerts for an expired donation.")
     don_lat, don_lon = resolve_location_coordinates(donation.pickup_location, donation.latitude, donation.longitude)
 
     receivers = db.query(User).filter(User.role == "receiver", User.is_active == True).all()

@@ -112,17 +112,19 @@ def calculate_urgency_score(deadline: datetime) -> Tuple[float, float, str]:
     Computes urgency score (0 - 100), remaining hours, and urgency tier.
     Uses UTC consistently with database naive timestamps.
     """
+    if not deadline:
+        return (0.0, 0.0, "Expired")
     now = datetime.utcnow()
     if deadline.tzinfo:
         now = datetime.now(timezone.utc).replace(tzinfo=None)
         deadline = deadline.astimezone(timezone.utc).replace(tzinfo=None)
         
     time_diff = (deadline - now).total_seconds()
-    hours_left = max(0.0, round(time_diff / 3600.0, 1))
-    
-    if hours_left <= 0:
+    if time_diff <= 0:
         return (0.0, 0.0, "Expired")
-    elif hours_left <= 2.0:
+
+    hours_left = max(0.1, round(time_diff / 3600.0, 1))
+    if hours_left <= 2.0:
         # Critical urgency - immediate redistribution required
         return (100.0, hours_left, "Critical")
     elif hours_left <= 5.0:
@@ -234,6 +236,25 @@ def compute_matches_for_donation(
     )
     
     urgency_score, hours_left, urgency_tier = calculate_urgency_score(donation.consumption_deadline)
+
+    # Expired or non-available donations must never be matched or recommended
+    if donation.status == "Expired" or urgency_tier == "Expired" or hours_left <= 0:
+        return DonationRecommendationResponse(
+            donation_id=donation.id,
+            food_name=donation.food_name,
+            category=donation.category,
+            quantity=donation.quantity,
+            remaining_quantity=donation.remaining_quantity,
+            quantity_unit=donation.quantity_unit,
+            dietary_type=donation.dietary_type,
+            pickup_location=donation.pickup_location,
+            urgency_level="Expired",
+            hours_left=0.0,
+            best_match=None,
+            alternative_matches=[],
+            all_recommendations=[],
+            algorithm_summary="This food listing has expired and is excluded from AI matching recommendations."
+        )
     
     # Query all active receiver users
     receivers = db.query(User).filter(User.role == "receiver", User.is_active == True).all()

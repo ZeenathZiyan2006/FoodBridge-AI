@@ -21,6 +21,8 @@ import {
 import { api } from '../services/api';
 import { StatusBadge } from '../components/StatusBadge';
 import { SafetyBanner } from '../components/SafetyBanner';
+import { isDonationExpired } from '../utils/dateUtils';
+import { useExpiryWatcher } from '../hooks/useExpiryWatcher';
 
 export const MatchingEnginePage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -33,21 +35,30 @@ export const MatchingEnginePage = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
 
+  const loadDonations = async () => {
+    try {
+      const data = await api.getDonations({ status: 'Available', only_available: true });
+      const activeList = (data || []).filter(
+        (d) => d.status === 'Available' && !isDonationExpired(d)
+      );
+      setDonations(activeList);
+      if (activeList.length === 0) {
+        setSelectedDonationId('');
+        setRecommendations(null);
+      } else if (!selectedDonationId || !activeList.some((d) => d.id.toString() === selectedDonationId)) {
+        setSelectedDonationId(activeList[0].id.toString());
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   // Load all available/active donations for the selector dropdown
   useEffect(() => {
-    const loadDonations = async () => {
-      try {
-        const data = await api.getDonations();
-        setDonations(data || []);
-        if (!selectedDonationId && data && data.length > 0) {
-          setSelectedDonationId(data[0].id.toString());
-        }
-      } catch (err) {
-        console.error(err);
-      }
-    };
     loadDonations();
   }, []);
+
+  useExpiryWatcher(donations, setDonations, loadDonations);
 
   // Fetch AI recommendations when selectedDonationId changes
   const fetchMatchingResults = async (id, isRefresh = false) => {

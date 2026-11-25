@@ -25,6 +25,8 @@ import { StatusBadge } from '../components/StatusBadge';
 import { SafetyBanner } from '../components/SafetyBanner';
 import { ConfirmationModal } from '../components/ConfirmationModal';
 import { PickupRouteOptimizerModal } from '../components/PickupRouteOptimizerModal';
+import { isDonationExpired } from '../utils/dateUtils';
+import { useExpiryWatcher } from '../hooks/useExpiryWatcher';
 
 export const ReceiverDashboard = () => {
   const { user, deleteAccount, showToast } = useAuth();
@@ -53,8 +55,8 @@ export const ReceiverDashboard = () => {
   const [submittingRequest, setSubmittingRequest] = useState(false);
   const [requestError, setRequestError] = useState('');
 
-  const loadData = async () => {
-    setLoading(true);
+  const loadData = async (silent = false) => {
+    if (!silent) setLoading(true);
     try {
       const [allDonations, myReqs, feed] = await Promise.all([
         api.getDonations({
@@ -71,25 +73,36 @@ export const ReceiverDashboard = () => {
 
       // Filter out any expired or fully claimed food listings
       const freshAvailable = (allDonations || []).filter(
-        (d) => d.status === 'Available' && d.hours_left > 0 && ((d.remaining_quantity !== null && d.remaining_quantity !== undefined ? d.remaining_quantity : d.quantity) > 0)
+        (d) =>
+          d.status === 'Available' &&
+          !isDonationExpired(d) &&
+          ((d.remaining_quantity !== null && d.remaining_quantity !== undefined ? d.remaining_quantity : d.quantity) > 0)
       );
       setDonations(freshAvailable);
       setMyRequests(myReqs || []);
 
       const activeFeed = (feed || []).filter(
-        (f) => f.donation && f.donation.status === 'Available' && f.donation.hours_left > 0 && ((f.donation.remaining_quantity !== null && f.donation.remaining_quantity !== undefined ? f.donation.remaining_quantity : f.donation.quantity) > 0)
+        (f) =>
+          f.donation &&
+          f.donation.status === 'Available' &&
+          !isDonationExpired(f.donation) &&
+          ((f.donation.remaining_quantity !== null && f.donation.remaining_quantity !== undefined ? f.donation.remaining_quantity : f.donation.quantity) > 0)
       );
       setPersonalizedFeed(activeFeed);
     } catch (err) {
-      showToast(err.message || 'Failed to load food listings', 'error');
+      if (!silent) showToast(err.message || 'Failed to load food listings', 'error');
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
   useEffect(() => {
     loadData();
   }, [categoryFilter, dietaryFilter, locationFilter]);
+
+  // Automatically remove and purge food items once they reach their expired timeline
+  useExpiryWatcher(donations, setDonations, () => loadData(true));
+  useExpiryWatcher(personalizedFeed, setPersonalizedFeed, () => loadData(true), (item) => item.donation);
 
   const handleOpenRequestModal = (donation) => {
     setSelectedDonation(donation);

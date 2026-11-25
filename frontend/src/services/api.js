@@ -53,12 +53,12 @@ export const api = {
     body: JSON.stringify(userData),
   }),
   getMe: () => request('/api/auth/me'),
+  updateMyProfile: (data) => request('/api/auth/me', {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  }),
   deleteMyAccount: () => request('/api/auth/me', {
     method: 'DELETE',
-  }),
-  getDemoAccounts: () => request('/api/auth/demo-accounts'),
-  quickLogin: (role) => request(`/api/auth/quick-login/${role}`, {
-    method: 'POST',
   }),
 
   // Donations

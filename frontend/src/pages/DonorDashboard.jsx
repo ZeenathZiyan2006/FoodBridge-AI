@@ -27,6 +27,8 @@ import { StatusBadge } from '../components/StatusBadge';
 import { ConfirmationModal } from '../components/ConfirmationModal';
 import { SafetyBanner } from '../components/SafetyBanner';
 import { SurplusPredictorModal } from '../components/SurplusPredictorModal';
+import { parseUtcDate, isDonationExpired, getRemainingHours, formatRemainingTime } from '../utils/dateUtils';
+import { useExpiryWatcher } from '../hooks/useExpiryWatcher';
 
 export const DonorDashboard = () => {
   const { user, deleteAccount, showToast } = useAuth();
@@ -47,15 +49,15 @@ export const DonorDashboard = () => {
   const [surplusModalOpen, setSurplusModalOpen] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
 
-  const loadMyDonations = async () => {
+  const loadMyDonations = async (silent = false) => {
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
       const data = await api.getMyDonations();
       setDonations(data || []);
     } catch (err) {
-      showToast(err.message || 'Failed to load donations', 'error');
+      if (!silent) showToast(err.message || 'Failed to load donations', 'error');
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
@@ -63,11 +65,15 @@ export const DonorDashboard = () => {
     loadMyDonations();
   }, []);
 
+  // Automatically sync status to Expired once timeline passes (preserving historical records in Donor Dashboard)
+  useExpiryWatcher(donations, setDonations, () => loadMyDonations(true), (item) => item, 5000, true);
+
   // Compute dashboard metrics
   const totalListed = donations.length;
-  const availableCount = donations.filter((d) => d.status === 'Available').length;
-  const requestedCount = donations.filter((d) => ['Requested', 'Accepted', 'Ready for Pickup'].includes(d.status)).length;
+  const availableCount = donations.filter((d) => d.status === 'Available' && !isDonationExpired(d)).length;
+  const requestedCount = donations.filter((d) => ['Requested', 'Accepted', 'Ready for Pickup'].includes(d.status) && !isDonationExpired(d)).length;
   const completedCount = donations.filter((d) => ['Completed', 'Collected'].includes(d.status)).length;
+  const expiredCount = donations.filter((d) => d.status === 'Expired' || isDonationExpired(d)).length;
 
   const totalMealsDelivered = donations
     .filter((d) => ['Completed', 'Collected'].includes(d.status))
@@ -133,9 +139,11 @@ export const DonorDashboard = () => {
 
   // Filtered list
   const filteredDonations = donations.filter((d) => {
-    if (activeFilter === 'available') return d.status === 'Available';
-    if (activeFilter === 'pending') return ['Requested', 'Accepted', 'Ready for Pickup'].includes(d.status);
+    const expired = d.status === 'Expired' || isDonationExpired(d);
+    if (activeFilter === 'available') return d.status === 'Available' && !expired;
+    if (activeFilter === 'pending') return ['Requested', 'Accepted', 'Ready for Pickup'].includes(d.status) && !expired;
     if (activeFilter === 'completed') return ['Completed', 'Collected'].includes(d.status);
+    if (activeFilter === 'expired') return expired;
     return true;
   });
 
@@ -283,6 +291,16 @@ export const DonorDashboard = () => {
             >
               Completed ({completedCount})
             </button>
+            <button
+              onClick={() => setActiveFilter('expired')}
+              className={`px-3 py-1.5 rounded-full transition-all cursor-pointer ${
+                activeFilter === 'expired'
+                  ? 'bg-rose-700 text-white font-bold shadow-xs'
+                  : 'text-[#718078] hover:text-rose-700'
+              }`}
+            >
+              Expired ({expiredCount})
+            </button>
           </div>
         </div>
 
@@ -354,16 +372,32 @@ export const DonorDashboard = () => {
                     </td>
 
                     <td className="py-3.5 px-4">
-                      <span className={`font-heading font-bold ${d.hours_left <= 3 ? 'text-[#9A6217]' : 'text-[#202B25]'}`}>
-                        {d.hours_left ? `${d.hours_left} hrs left` : 'Expired'}
-                      </span>
-                      <p className="text-[11px] text-[#718078]">
-                        {new Date(d.consumption_deadline).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      </p>
+                      {['Completed', 'Collected'].includes(d.status) ? (
+                        <span className="font-heading font-bold text-[#16865B]">Delivered</span>
+                      ) : d.status === 'Expired' || isDonationExpired(d) ? (
+                        <>
+                          <span className="font-heading font-bold text-rose-600">Expired</span>
+                          <p className="text-[11px] text-[#718078]">
+                            {parseUtcDate(d.expired_at || d.consumption_deadline)?.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </p>
+                        </>
+                      ) : (
+                        <>
+                          <span className={`font-heading font-bold ${getRemainingHours(d) <= 3 ? 'text-[#9A6217]' : 'text-[#202B25]'}`}>
+                            {formatRemainingTime(d, 'left')}
+                          </span>
+                          <p className="text-[11px] text-[#718078]">
+                            {parseUtcDate(d.consumption_deadline)?.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </p>
+                        </>
+                      )}
                     </td>
 
                     <td className="py-3.5 px-4">
-                      <StatusBadge status={d.status} urgencyLevel={d.urgency_level} />
+                      <StatusBadge
+                        status={isDonationExpired(d) && !['Completed', 'Collected', 'Cancelled'].includes(d.status) ? 'Expired' : d.status}
+                        urgencyLevel={d.urgency_level}
+                      />
                     </td>
 
                     <td className="py-3.5 px-4 text-center">
@@ -382,13 +416,15 @@ export const DonorDashboard = () => {
 
                     <td className="py-3.5 px-4 text-right">
                       <div className="flex items-center justify-end gap-1.5">
-                        <Link
-                          to={`/matching?donationId=${d.id}`}
-                          className="p-2 text-[#16865B] hover:bg-[#E8F5ED] rounded-xl transition"
-                          title="Run AI Matching"
-                        >
-                          <Sparkles className="w-4 h-4 text-[#E9A23B]" />
-                        </Link>
+                        {d.status !== 'Expired' && !isDonationExpired(d) && (
+                          <Link
+                            to={`/matching?donationId=${d.id}`}
+                            className="p-2 text-[#16865B] hover:bg-[#E8F5ED] rounded-xl transition"
+                            title="Run AI Matching"
+                          >
+                            <Sparkles className="w-4 h-4 text-[#E9A23B]" />
+                          </Link>
+                        )}
 
                         <Link
                           to={`/donation/${d.id}`}

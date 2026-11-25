@@ -37,6 +37,8 @@ import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { StatusBadge } from '../components/StatusBadge';
 import { ConfirmationModal } from '../components/ConfirmationModal';
+import { isDonationExpired } from '../utils/dateUtils';
+import { useExpiryWatcher } from '../hooks/useExpiryWatcher';
 
 export const AdminDashboard = () => {
   const { user, showToast } = useAuth();
@@ -55,8 +57,8 @@ export const AdminDashboard = () => {
   const [donationToDelete, setDonationToDelete] = useState(null);
   const [actionLoading, setActionLoading] = useState(false);
 
-  const loadAdminData = async () => {
-    setLoading(true);
+  const loadAdminData = async (silent = false) => {
+    if (!silent) setLoading(true);
     try {
       const [sumData, chartData, userData, donationData] = await Promise.all([
         api.getSummary().catch(() => null),
@@ -70,15 +72,18 @@ export const AdminDashboard = () => {
       setUsers(userData || []);
       setDonations(donationData || []);
     } catch (err) {
-      showToast(err.message || 'Failed to load administrator data', 'error');
+      if (!silent) showToast(err.message || 'Failed to load administrator data', 'error');
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
   useEffect(() => {
     loadAdminData();
   }, []);
+
+  // Preserve historical Expired items in Admin Dashboard while syncing status & KPIs live
+  useExpiryWatcher(donations, setDonations, () => loadAdminData(true), (item) => item, 5000, true);
 
   const handleToggleUserStatus = async (userId) => {
     try {
@@ -353,7 +358,12 @@ export const AdminDashboard = () => {
                     </td>
                     <td className="py-3.5 px-4 font-mono font-bold text-[#123C2D]">{d.quantity} {d.quantity_unit}</td>
                     <td className="py-3.5 px-4">{d.pickup_location}</td>
-                    <td className="py-3.5 px-4"><StatusBadge status={d.status} /></td>
+                    <td className="py-3.5 px-4">
+                      <StatusBadge
+                        status={isDonationExpired(d) && !['Completed', 'Collected', 'Cancelled'].includes(d.status) ? 'Expired' : d.status}
+                        urgencyLevel={d.urgency_level}
+                      />
+                    </td>
                     <td className="py-3.5 px-4 text-right">
                       <div className="flex items-center justify-end gap-2">
                         <Link to={`/donation/${d.id}`} className="p-1.5 rounded-lg text-[#718078] hover:text-[#123C2D] hover:bg-gray-100">

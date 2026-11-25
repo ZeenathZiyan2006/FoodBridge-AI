@@ -13,12 +13,14 @@ from ..schemas import (
 )
 from ..auth import get_current_user, require_roles
 from ..matching_engine import haversine_distance, resolve_location_coordinates, calculate_urgency_score
+from .donations import mark_expired_donations
 
 router = APIRouter(prefix="/api/analytics", tags=["Analytics & Impact"])
 
 @router.get("/summary", response_model=ImpactMetricsOut)
 def get_platform_summary(db: Session = Depends(get_db)):
     """Computes real-time platform statistics from the SQLite database."""
+    mark_expired_donations(db)
     total_donors = db.query(User).filter(User.role == "donor").count()
     total_receivers = db.query(User).filter(User.role == "receiver").count()
     total_donations = db.query(FoodDonation).count()
@@ -54,10 +56,19 @@ def get_platform_summary(db: Session = Depends(get_db)):
 
     pending_requests = db.query(FoodRequest).filter(FoodRequest.status == "Requested").count()
     
-    expired_count = sum(1 for d in all_donations if d.status == "Expired" or d.consumption_deadline <= now)
+    expired_count = sum(
+        1 for d in all_donations
+        if d.status == "Expired" or (
+            d.status not in ["Completed", "Collected", "Cancelled"]
+            and d.consumption_deadline is not None
+            and d.consumption_deadline <= now
+        )
+    )
     urgent_count = sum(
         1 for d in all_donations
-        if d.status == "Available" and 0 < (d.consumption_deadline - now).total_seconds() / 3600.0 <= 5.0
+        if d.status == "Available"
+        and d.consumption_deadline is not None
+        and 0 < (d.consumption_deadline - now).total_seconds() / 3600.0 <= 5.0
     )
 
     # Impact metrics formulas:
@@ -87,6 +98,7 @@ def get_platform_summary(db: Session = Depends(get_db)):
 @router.get("/charts")
 def get_chart_analytics(db: Session = Depends(get_db)):
     """Computes chart datasets for Recharts."""
+    mark_expired_donations(db)
     donations = db.query(FoodDonation).all()
 
     # 1. Category Distribution
@@ -150,6 +162,7 @@ def get_food_waste_hotspots(db: Session = Depends(get_db)):
     Innovative Feature: Food Waste Hotspot Analysis.
     Identifies geographic clusters where large quantities of surplus food are repeatedly listed.
     """
+    mark_expired_donations(db)
     donations = db.query(FoodDonation).all()
     grouped = defaultdict(lambda: {"count": 0, "meals": 0.0, "categories": [], "donors": set()})
 
@@ -350,6 +363,7 @@ def optimize_pickup_route(
     Calculates an efficient multi-stop collection and distribution route for volunteers
     or logistics delivery partners, prioritizing high-urgency batches first.
     """
+    mark_expired_donations(db)
     now = datetime.datetime.utcnow()
     # Find active available donations
     active_donations = db.query(FoodDonation).filter(

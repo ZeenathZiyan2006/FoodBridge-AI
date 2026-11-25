@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from ..database import get_db
 from ..models import User, DonorProfile, ReceiverProfile, FoodDonation, FoodRequest, DonationStatusHistory, Notification
-from ..schemas import UserRegister, UserLogin, TokenResponse, UserOut
+from ..schemas import UserRegister, UserLogin, TokenResponse, UserOut, UserProfileUpdate
 from ..auth import hash_password, verify_password, create_access_token, get_current_user
 
 router = APIRouter(prefix="/api/auth", tags=["Authentication"])
@@ -36,6 +36,7 @@ def register(user_in: UserRegister, db: Session = Depends(get_db)):
         location_name=user_in.location_name or "Manipal",
         latitude=user_in.latitude,
         longitude=user_in.longitude,
+        profile_picture=user_in.profile_picture,
         is_active=True
     )
     db.add(new_user)
@@ -102,6 +103,75 @@ def get_me(current_user: User = Depends(get_current_user)):
     return current_user
 
 
+@router.put("/me", response_model=UserOut)
+def update_my_profile(
+    profile_in: UserProfileUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Update permitted personal and organization profile fields for the authenticated user."""
+    if profile_in.full_name is not None:
+        cleaned_name = profile_in.full_name.strip()
+        if not cleaned_name:
+            raise HTTPException(status_code=400, detail="Full name cannot be empty.")
+        current_user.full_name = cleaned_name
+
+    if profile_in.phone is not None:
+        current_user.phone = profile_in.phone.strip() or None
+    if profile_in.address is not None:
+        current_user.address = profile_in.address.strip() or None
+    if profile_in.location_name is not None:
+        current_user.location_name = profile_in.location_name.strip() or current_user.location_name
+    if profile_in.profile_picture is not None:
+        pic = profile_in.profile_picture.strip()
+        current_user.profile_picture = pic or None
+
+    if current_user.role == "donor":
+        donor_prof = current_user.donor_profile
+        if not donor_prof:
+            donor_prof = DonorProfile(user_id=current_user.id)
+            db.add(donor_prof)
+            db.flush()
+        if profile_in.organization_type is not None:
+            donor_prof.organization_type = profile_in.organization_type.strip() or donor_prof.organization_type
+        if profile_in.fssai_license is not None:
+            donor_prof.fssai_license = profile_in.fssai_license.strip() or None
+        if profile_in.operating_hours is not None:
+            donor_prof.operating_hours = profile_in.operating_hours.strip() or donor_prof.operating_hours
+        if profile_in.description is not None:
+            donor_prof.description = profile_in.description.strip() or None
+
+    elif current_user.role == "receiver":
+        rec_prof = current_user.receiver_profile
+        if not rec_prof:
+            rec_prof = ReceiverProfile(
+                user_id=current_user.id,
+                organization_name=current_user.full_name
+            )
+            db.add(rec_prof)
+            db.flush()
+        if profile_in.organization_name is not None:
+            org_name = profile_in.organization_name.strip()
+            if org_name:
+                rec_prof.organization_name = org_name
+        if profile_in.organization_type is not None:
+            rec_prof.organization_type = profile_in.organization_type.strip() or rec_prof.organization_type
+        if profile_in.contact_person is not None:
+            rec_prof.contact_person = profile_in.contact_person.strip() or None
+        if profile_in.required_capacity_meals is not None:
+            if profile_in.required_capacity_meals <= 0:
+                raise HTTPException(status_code=400, detail="Required meal capacity must be greater than zero.")
+            rec_prof.required_capacity_meals = profile_in.required_capacity_meals
+        if profile_in.dietary_preference is not None:
+            rec_prof.dietary_preference = profile_in.dietary_preference.strip() or rec_prof.dietary_preference
+        if profile_in.preferred_categories is not None:
+            rec_prof.preferred_categories = profile_in.preferred_categories.strip() or rec_prof.preferred_categories
+
+    db.commit()
+    db.refresh(current_user)
+    return current_user
+
+
 @router.delete("/me")
 def delete_my_account(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     """Allows the authenticated account owner (Donor or Receiver) to permanently delete their own account."""
@@ -127,69 +197,3 @@ def delete_my_account(current_user: User = Depends(get_current_user), db: Sessio
     db.commit()
 
     return {"message": "Your account and all associated data have been permanently deleted."}
-
-
-@router.get("/demo-accounts")
-def get_demo_accounts():
-    """Returns sample demo accounts with roles and passwords (only Donor and Receiver)."""
-    return [
-        {
-            "role": "donor",
-            "title": "Food Donor (College Canteen)",
-            "name": "Manipal Food Court & MIT Canteen",
-            "email": "donor.manipal@foodbridge.ai",
-            "password": "password123",
-            "location": "MIT Campus, Manipal",
-            "description": "Lists large batches of surplus lunch and dinner meals from campus canteens."
-        },
-        {
-            "role": "donor",
-            "title": "Food Donor (Udupi Restaurant)",
-            "name": "Hotel Sri Krishna Woodlands",
-            "email": "donor.udupi@foodbridge.ai",
-            "password": "password123",
-            "location": "Car Street, Udupi",
-            "description": "Traditional South Indian vegetarian restaurant listing authentic meals."
-        },
-        {
-            "role": "receiver",
-            "title": "Food Receiver (Orphanage)",
-            "name": "Hope Children's Orphanage",
-            "email": "receiver.hope@foodbridge.ai",
-            "password": "password123",
-            "location": "Manipal",
-            "description": "Requires ~35 vegetarian meals daily for children in need."
-        },
-        {
-            "role": "receiver",
-            "title": "Food Receiver (Shelter)",
-            "name": "Karunalaya Destitute Care Shelter",
-            "email": "receiver.udupi@foodbridge.ai",
-            "password": "password123",
-            "location": "Bannanje, Udupi",
-            "description": "Requires ~50 meals daily for homeless destitutes and elderly patients."
-        }
-    ]
-
-
-@router.post("/quick-login/{role}", response_model=TokenResponse)
-def quick_demo_login(role: str, db: Session = Depends(get_db)):
-    """Fast 1-click demo login endpoint for evaluator convenience (only donor and receiver)."""
-    role = role.lower()
-    email_map = {
-        "donor": "donor.manipal@foodbridge.ai",
-        "receiver": "receiver.hope@foodbridge.ai",
-    }
-    target_email = email_map.get(role)
-    if not target_email:
-        raise HTTPException(status_code=400, detail="Invalid demo role. Use donor or receiver.")
-
-    user = db.query(User).filter(User.email == target_email).first()
-    if not user:
-        # Fallback to any user with this role
-        user = db.query(User).filter(User.role == role).first()
-        if not user:
-            raise HTTPException(status_code=404, detail=f"No demo user found for role: {role}")
-
-    token = create_access_token(data={"sub": str(user.id), "email": user.email, "role": user.role})
-    return TokenResponse(access_token=token, token_type="bearer", user=user)

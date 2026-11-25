@@ -18,6 +18,7 @@ class User(Base):
     location_name = Column(String(100), default="Manipal", nullable=False)
     latitude = Column(Float, nullable=True)
     longitude = Column(Float, nullable=True)
+    profile_picture = Column(Text, nullable=True)
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
 
@@ -82,6 +83,7 @@ class FoodDonation(Base):
     donor_contact = Column(String(100), nullable=True)
     image_url = Column(String(500), nullable=True)
     status = Column(String(30), default="Available")  # Available, Requested, Accepted, Ready for Pickup, Collected, Completed, Expired, Cancelled
+    expired_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
 

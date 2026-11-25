@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import {
-  Sparkles,
   Lock,
   Mail,
   ArrowRight,
@@ -23,16 +22,16 @@ import {
 import { useAuth } from '../context/AuthContext';
 
 export const LoginPage = () => {
-  const { login, register, quickLogin, showToast } = useAuth();
+  const { login, register } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
   // Role Selection: 'donor' or 'receiver' (Two distinct options)
   const initialRole = searchParams.get('role') === 'receiver' ? 'receiver' : 'donor';
-  const initialMode = searchParams.get('mode') === 'signup' ? 'signup' : searchParams.get('mode') === 'demo' ? 'demo' : 'signin';
+  const initialMode = searchParams.get('mode') === 'signup' ? 'signup' : 'signin';
 
   const [selectedRole, setSelectedRole] = useState(initialRole);
-  const [authMode, setAuthMode] = useState(initialMode); // 'signin', 'signup', or 'demo'
+  const [authMode, setAuthMode] = useState(initialMode); // 'signin' or 'signup'
 
   // Common credentials fields
   const [email, setEmail] = useState('');
@@ -41,7 +40,6 @@ export const LoginPage = () => {
   const [rememberMe, setRememberMe] = useState(true);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [selectedDemoRole, setSelectedDemoRole] = useState(null);
 
   // Sign-Up Specific Fields
   const [fullName, setFullName] = useState('');
@@ -62,28 +60,6 @@ export const LoginPage = () => {
   const [contactPerson, setContactPerson] = useState('');
   const [requiredCapacity, setRequiredCapacity] = useState(40);
   const [dietaryPreference, setDietaryPreference] = useState('Both');
-
-  // Pre-seeded evaluator demo accounts
-  const demoAccounts = [
-    {
-      role: 'donor',
-      title: 'Food Donor (College Canteen)',
-      email: 'donor.manipal@foodbridge.ai',
-      password: 'password123',
-      badge: 'MIT Food Court',
-      icon: Utensils,
-      desc: 'Authorized to list surplus meals, manage batches, and approve shelter requests.'
-    },
-    {
-      role: 'receiver',
-      title: 'Food Receiver (Orphanage Shelter)',
-      email: 'receiver.hope@foodbridge.ai',
-      password: 'password123',
-      badge: 'Hope Orphanage',
-      icon: HeartHandshake,
-      desc: 'Authorized to browse surplus food inventory, request portions, and track pickups.'
-    }
-  ];
 
   // Handle Standard Sign In
   const handleSignIn = async (e) => {
@@ -155,30 +131,6 @@ export const LoginPage = () => {
       }
     } catch (err) {
       setError(err.message || 'Registration failed. Please check inputs.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSelectDemo = (demo) => {
-    setEmail(demo.email);
-    setPassword(demo.password);
-    setSelectedDemoRole(demo.role);
-    setSelectedRole(demo.role);
-    setAuthMode('signin');
-    showToast(`Loaded credentials for ${demo.title}`, 'info');
-  };
-
-  const handleInstantDemoLogin = async (role) => {
-    setError('');
-    setLoading(true);
-    try {
-      await quickLogin(role);
-      if (role === 'donor') navigate('/donor-dashboard');
-      else if (role === 'receiver') navigate('/receiver-dashboard');
-      else navigate('/');
-    } catch (err) {
-      setError(err.message || 'Demo authentication failed');
     } finally {
       setLoading(false);
     }
@@ -259,8 +211,8 @@ export const LoginPage = () => {
         {/* Right Side: Professional Clean Form */}
         <div className="lg:col-span-7 p-6 sm:p-10 lg:p-12 flex flex-col justify-center bg-white">
           <div className="max-w-xl w-full mx-auto space-y-5">
-            {/* Mode Switcher Tabs: Sign In vs Sign Up vs Demo Accounts */}
-            <div className="grid grid-cols-3 p-1 bg-[#F8FAF7] rounded-full border border-[#123C2D]/8 text-xs font-heading font-bold">
+            {/* Mode Switcher Tabs: Sign In vs Sign Up */}
+            <div className="grid grid-cols-2 p-1 bg-[#F8FAF7] rounded-full border border-[#123C2D]/8 text-xs font-heading font-bold">
               <button
                 type="button"
                 onClick={() => {
@@ -292,22 +244,6 @@ export const LoginPage = () => {
                 <UserPlus className="w-3.5 h-3.5" />
                 <span>Sign Up (New)</span>
               </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setAuthMode('demo');
-                  setError('');
-                }}
-                className={`py-2 px-2.5 rounded-full transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
-                  authMode === 'demo'
-                    ? 'bg-[#123C2D] text-white shadow-xs'
-                    : 'text-[#718078] hover:text-[#123C2D]'
-                }`}
-              >
-                <Sparkles className="w-3.5 h-3.5 text-[#E9A23B]" />
-                <span>Demo</span>
-              </button>
             </div>
 
             {/* Header Titles */}
@@ -317,8 +253,6 @@ export const LoginPage = () => {
                 <span>
                   {authMode === 'signup'
                     ? `Create ${selectedRole === 'donor' ? 'Food Donor' : 'Receiver Shelter'} Account`
-                    : authMode === 'demo'
-                    ? 'Evaluator Demo Access'
                     : 'Secure Account Access'}
                 </span>
               </div>
@@ -326,8 +260,6 @@ export const LoginPage = () => {
               <h1 className="font-heading text-2xl sm:text-3xl font-extrabold text-[#123C2D] tracking-tight">
                 {authMode === 'signup'
                   ? `Sign Up for ${selectedRole === 'donor' ? "Donor's Account" : "Receiver's Account"}`
-                  : authMode === 'demo'
-                  ? 'Quick Evaluator Demo Personas'
                   : 'Sign In to Your Account'}
               </h1>
 
@@ -336,8 +268,6 @@ export const LoginPage = () => {
                   ? (selectedRole === 'donor'
                       ? 'For commercial kitchens, college canteens, restaurants, and caterers donating surplus meals.'
                       : 'For verified NGOs, shelters, orphanages, and community care homes receiving surplus meals.')
-                  : authMode === 'demo'
-                  ? 'One-click sign in with pre-seeded personas for evaluation.'
                   : 'Enter your credentials to access your dashboard. The system automatically routes you to your authorized workspace.'}
               </p>
             </div>
@@ -431,25 +361,6 @@ export const LoginPage = () => {
             {/* MODE 1: SIGN IN FORM */}
             {authMode === 'signin' && (
               <form onSubmit={handleSignIn} autoComplete="off" className="space-y-4 animate-fade-in">
-                {selectedDemoRole && (
-                  <div className="p-2.5 bg-[#FEF7EC] border border-[#E9A23B]/40 rounded-xl text-[#9A6217] text-xs flex items-center justify-between">
-                    <span className="font-medium text-[11px]">
-                      Selected Persona: <strong className="uppercase">{selectedDemoRole}</strong>
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSelectedDemoRole(null);
-                        setEmail('');
-                        setPassword('');
-                      }}
-                      className="text-[10px] text-[#9A6217] hover:underline cursor-pointer"
-                    >
-                      Clear
-                    </button>
-                  </div>
-                )}
-
                 {/* Email Address */}
                 <div>
                   <label className="block text-xs font-heading font-bold text-[#202B25] uppercase tracking-wider mb-1.5">
@@ -802,82 +713,6 @@ export const LoginPage = () => {
               </form>
             )}
 
-            {/* MODE 3: EVALUATOR DEMO ACCOUNTS */}
-            {authMode === 'demo' && (
-              <div className="space-y-3 animate-fade-in">
-                <div className="p-3 bg-[#FEF7EC] border border-[#E9A23B]/30 rounded-2xl text-[11px] text-[#9A6217] leading-relaxed">
-                  <p className="font-bold flex items-center gap-1.5 mb-1 font-heading">
-                    <Sparkles className="w-3.5 h-3.5 text-[#E9A23B]" />
-                    <span>Quick Evaluator Demo Personas</span>
-                  </p>
-                  <p className="text-[#9A6217]">
-                    Click any pre-seeded persona to sign in instantly with one click:
-                  </p>
-                </div>
-
-                <div className="space-y-2.5">
-                  {demoAccounts.map((d) => {
-                    const Icon = d.icon;
-                    return (
-                      <div
-                        key={d.role}
-                        className="p-3.5 rounded-2xl border border-[#123C2D]/10 hover:border-[#16865B]/40 hover:bg-[#E8F5ED]/30 transition-all duration-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white shadow-2xs"
-                      >
-                        <div className="flex items-start gap-3">
-                          <div className="w-9 h-9 rounded-xl bg-[#E8F5ED] text-[#123C2D] flex items-center justify-center shrink-0">
-                            <Icon className="w-4.5 h-4.5 text-[#16865B]" />
-                          </div>
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <span className="font-heading font-extrabold text-xs text-[#123C2D]">
-                                {d.title}
-                              </span>
-                              <span className="text-[10px] bg-gray-100 text-[#718078] px-1.5 py-0.5 rounded font-mono">
-                                {d.badge}
-                              </span>
-                            </div>
-                            <p className="text-[11px] font-mono text-[#718078] mt-0.5">
-                              {d.email}
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
-                          <button
-                            type="button"
-                            onClick={() => handleSelectDemo(d)}
-                            className="px-2.5 py-1.5 rounded-full border border-gray-200 text-[#718078] hover:bg-gray-100 text-[11px] font-heading font-bold transition cursor-pointer"
-                            title="Pre-fill email & password in the form"
-                          >
-                            Fill Form
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleInstantDemoLogin(d.role)}
-                            disabled={loading}
-                            className="px-3.5 py-1.5 rounded-full bg-[#123C2D] hover:bg-[#16865B] text-white text-[11px] font-heading font-bold transition shadow-xs cursor-pointer flex items-center gap-1"
-                          >
-                            <span>1-Click Sign In</span>
-                            <ArrowRight className="w-3 h-3 text-[#E8F5ED]" />
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-
-                <div className="text-center pt-3 border-t border-gray-100">
-                  <button
-                    type="button"
-                    onClick={() => setAuthMode('signin')}
-                    className="text-xs text-[#16865B] font-heading font-bold hover:underline cursor-pointer"
-                  >
-                    ← Back to Standard Sign In
-                  </button>
-                </div>
-              </div>
-            )}
-
             {/* Bottom Quick Switch Note */}
             <div className="text-center pt-3 border-t border-gray-100 text-xs text-[#718078]">
               {authMode === 'signup' ? (
@@ -892,20 +727,6 @@ export const LoginPage = () => {
                     className="text-[#16865B] font-heading font-bold hover:underline cursor-pointer"
                   >
                     Sign In to Your Account →
-                  </button>
-                </span>
-              ) : authMode === 'demo' ? (
-                <span>
-                  Want to use your own credentials?{' '}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setAuthMode('signin');
-                      setError('');
-                    }}
-                    className="text-[#16865B] font-heading font-bold hover:underline cursor-pointer"
-                  >
-                    Standard Sign In →
                   </button>
                 </span>
               ) : (

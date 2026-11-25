@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Clock, MapPin, Sparkles, ChefHat, ArrowRight, ShieldCheck, HeartHandshake } from 'lucide-react';
 import { StatusBadge } from './StatusBadge';
+import { isDonationExpired, getRemainingHours, formatRemainingTime } from '../utils/dateUtils';
 
 const CATEGORY_FALLBACK_IMAGES = {
   'Cooked Meals': 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&auto=format&fit=crop&q=80',
@@ -14,7 +15,8 @@ const CATEGORY_FALLBACK_IMAGES = {
 };
 
 export const FoodCard = ({ donation, onRequest, matchScore, receiverView = false }) => {
-  const isExpired = donation.status === 'Expired' || (donation.hours_left !== undefined && donation.hours_left !== null && donation.hours_left <= 0);
+  const isExpired = isDonationExpired(donation);
+  const remainingHours = getRemainingHours(donation);
   const remQty = donation.remaining_quantity !== null && donation.remaining_quantity !== undefined ? donation.remaining_quantity : donation.quantity;
   const isAlreadyRequested = donation.status !== 'Available' || remQty <= 0;
   const isUnavailable = isExpired || isAlreadyRequested;
@@ -115,8 +117,8 @@ export const FoodCard = ({ donation, onRequest, matchScore, receiverView = false
                   <span className="text-amber-700 font-bold">Unavailable (Requested)</span>
                 ) : (
                   <span>
-                    Deadline: <strong className={donation.hours_left <= 3 ? 'text-[#9A6217] font-bold' : 'text-[#202B25]'}>
-                      {donation.hours_left ? `${donation.hours_left} hrs remaining` : new Date(donation.consumption_deadline).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    Deadline: <strong className={remainingHours <= 3 ? 'text-[#9A6217] font-bold' : 'text-[#202B25]'}>
+                      {formatRemainingTime(donation)}
                     </strong>
                   </span>
                 )}

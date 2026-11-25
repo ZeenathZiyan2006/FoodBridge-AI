@@ -8,6 +8,7 @@ from ..database import get_db
 from ..models import FoodRequest, FoodDonation, User, DonationStatusHistory, Notification
 from ..schemas import FoodRequestCreate, FoodRequestOut, StatusUpdateSchema
 from ..auth import get_current_user, require_roles
+from .donations import mark_expired_donations, _to_naive_utc
 
 router = APIRouter(prefix="/api/requests", tags=["Food Requests"])
 
@@ -20,13 +21,18 @@ def create_food_request(
     db: Session = Depends(get_db)
 ):
     """Receiver requests surplus food donation."""
+    mark_expired_donations(db)
     donation = db.query(FoodDonation).filter(FoodDonation.id == request_in.donation_id).first()
     if not donation:
         raise HTTPException(status_code=404, detail="Donation not found.")
 
     # Check if expired
     now = datetime.datetime.utcnow()
-    if donation.consumption_deadline <= now or donation.status == "Expired":
+    if (
+        not donation.consumption_deadline
+        or _to_naive_utc(donation.consumption_deadline) <= now
+        or donation.status == "Expired"
+    ):
         raise HTTPException(
             status_code=400,
             detail="Safety Violation: This food donation has passed its consumption deadline and cannot be requested."
@@ -119,6 +125,7 @@ def get_my_requests(
     db: Session = Depends(get_db)
 ):
     """Retrieve all requests made by the logged-in receiver."""
+    mark_expired_donations(db)
     requests = db.query(FoodRequest)\
         .filter(FoodRequest.receiver_id == current_user.id)\
         .order_by(desc(FoodRequest.created_at))\
@@ -132,6 +139,7 @@ def get_requests_for_donation(
     db: Session = Depends(get_db)
 ):
     """Retrieve requests for a specific donation (owner donor, receiver who requested, or admin)."""
+    mark_expired_donations(db)
     donation = db.query(FoodDonation).filter(FoodDonation.id == donation_id).first()
     if not donation:
         raise HTTPException(status_code=404, detail="Donation not found.")
@@ -157,6 +165,7 @@ def update_request_status(
     Lifecycle status progression:
     Available -> Requested -> Accepted -> Ready for Pickup -> Collected -> Completed
     """
+    mark_expired_donations(db)
     req = db.query(FoodRequest).filter(FoodRequest.id == request_id).first()
     if not req:
         raise HTTPException(status_code=404, detail="Request not found.")
@@ -164,6 +173,13 @@ def update_request_status(
     donation = req.donation
     new_status = status_update.status
     now = datetime.datetime.utcnow()
+
+    if new_status == "Accepted" and (
+        donation.status == "Expired"
+        or not donation.consumption_deadline
+        or _to_naive_utc(donation.consumption_deadline) <= now
+    ):
+        raise HTTPException(status_code=400, detail="Cannot accept request: this food donation has expired.")
 
     # Permissions check:
     # Accept / Reject / Ready for Pickup / Completed can be done by Donor or Admin

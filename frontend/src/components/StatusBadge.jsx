@@ -2,12 +2,12 @@ import React from 'react';
 import { Clock, CheckCircle2, Package, Truck, Sparkles, XCircle, ShieldCheck } from 'lucide-react';
 
 export const StatusBadge = ({ status, urgencyLevel, receiverView = false }) => {
-  // If expired, always label as Unavailable
+  // If expired, show Unavailable on receiver views and Expired in donor/admin views
   if (status === 'Expired' || urgencyLevel === 'Expired') {
     return (
       <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-[11px] font-heading font-bold bg-rose-50 text-rose-800 border border-rose-200 shadow-2xs">
         <XCircle className="w-3.5 h-3.5 text-rose-600" />
-        <span>Unavailable</span>
+        <span>{receiverView ? 'Unavailable' : 'Expired'}</span>
       </span>
     );
   }

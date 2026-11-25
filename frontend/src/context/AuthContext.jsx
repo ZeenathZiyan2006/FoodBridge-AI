@@ -70,24 +70,6 @@ export const AuthProvider = ({ children }) => {
     return data.user;
   };
 
-  const quickLogin = async (role) => {
-    if (user) {
-      showToast(`Active session in progress as ${user.role.toUpperCase()}. Direct role switching is prohibited. Please sign out first.`, 'error');
-      return null;
-    }
-    try {
-      const data = await api.quickLogin(role);
-      localStorage.setItem('foodbridge_token', data.access_token);
-      setToken(data.access_token);
-      setUser(data.user);
-      showToast(`Loaded demo ${role.toUpperCase()}: ${data.user.full_name}`, 'success');
-      return data.user;
-    } catch (err) {
-      showToast(err.message || 'Demo login failed', 'error');
-      throw err;
-    }
-  };
-
   const logout = () => {
     localStorage.removeItem('foodbridge_token');
     setToken(null);
@@ -110,6 +92,18 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const updateProfile = async (profileData) => {
+    try {
+      const updatedUser = await api.updateMyProfile(profileData);
+      setUser(updatedUser);
+      showToast('Profile updated successfully!', 'success');
+      return updatedUser;
+    } catch (err) {
+      showToast(err.message || 'Failed to update profile', 'error');
+      throw err;
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -123,9 +117,9 @@ export const AuthProvider = ({ children }) => {
         toggleDashboardPanel,
         login,
         register,
-        quickLogin,
         logout,
         deleteAccount,
+        updateProfile,
         showToast,
         fetchUnreadCount,
       }}

@@ -12,6 +12,7 @@ class UserBase(BaseModel):
     location_name: Optional[str] = "Manipal"
     latitude: Optional[float] = None
     longitude: Optional[float] = None
+    profile_picture: Optional[str] = None
 
 class UserRegister(UserBase):
     password: Optional[str] = "password123"
@@ -67,6 +68,25 @@ class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
     user: UserOut
+
+
+class UserProfileUpdate(BaseModel):
+    full_name: Optional[str] = None
+    phone: Optional[str] = None
+    address: Optional[str] = None
+    location_name: Optional[str] = None
+    profile_picture: Optional[str] = None
+    # Donor-specific permitted fields
+    organization_type: Optional[str] = None
+    fssai_license: Optional[str] = None
+    operating_hours: Optional[str] = None
+    description: Optional[str] = None
+    # Receiver-specific permitted fields
+    organization_name: Optional[str] = None
+    contact_person: Optional[str] = None
+    required_capacity_meals: Optional[int] = None
+    dietary_preference: Optional[str] = None
+    preferred_categories: Optional[str] = None
 
 # Food Donation Schemas
 class FoodDonationCreate(BaseModel):
@@ -150,6 +170,7 @@ class FoodDonationOut(BaseModel):
     donor_contact: Optional[str] = None
     image_url: Optional[str] = None
     status: str
+    expired_at: Optional[datetime] = None
     created_at: datetime
     updated_at: datetime
     donor: Optional[UserOut] = None

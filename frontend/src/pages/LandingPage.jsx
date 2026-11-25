@@ -29,6 +29,8 @@ import {
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
+import { isDonationExpired } from '../utils/dateUtils';
+import { useExpiryWatcher } from '../hooks/useExpiryWatcher';
 import { FoodCard } from '../components/FoodCard';
 import { SafetyBanner } from '../components/SafetyBanner';
 import { HowFoodBridgeWorks } from '../components/HowFoodBridgeWorks';
@@ -61,28 +63,31 @@ export const LandingPage = () => {
     }
   }, [user, navigate]);
 
-  useEffect(() => {
-    const loadLandingData = async () => {
-      try {
-        const [summaryData, donationsData] = await Promise.all([
-          api.getSummary().catch(() => null),
-          api.getDonations({ limit: 8, status: 'Available', only_available: true }).catch(() => []),
-        ]);
-        if (summaryData) setStats(summaryData);
-        if (donationsData) {
-          const activeOnly = donationsData.filter(
-            (d) => d.status === 'Available' && d.hours_left > 0
-          );
-          setFeaturedDonations(activeOnly.slice(0, 4));
-        }
-      } catch (err) {
-        console.error('Landing load error', err);
-      } finally {
-        setLoading(false);
+  const loadLandingData = async () => {
+    try {
+      const [summaryData, donationsData] = await Promise.all([
+        api.getSummary().catch(() => null),
+        api.getDonations({ limit: 8, status: 'Available', only_available: true }).catch(() => []),
+      ]);
+      if (summaryData) setStats(summaryData);
+      if (donationsData) {
+        const activeOnly = donationsData.filter(
+          (d) => d.status === 'Available' && !isDonationExpired(d)
+        );
+        setFeaturedDonations(activeOnly.slice(0, 4));
       }
-    };
+    } catch (err) {
+      console.error('Landing load error', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     loadLandingData();
   }, []);
+
+  useExpiryWatcher(featuredDonations, setFeaturedDonations, loadLandingData);
 
   const handleRoleAction = (requiredRole, path) => {
     if (!user) {

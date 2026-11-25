@@ -124,14 +124,60 @@ def run_tests():
     db.commit()
     print("  --> PASS: Full lifecycle Available -> Requested -> Accepted -> Completed verified.")
 
-    # 6. Food Safety Rule: Expired Food Lockout
-    print(f"\n[Test 6] Food Safety Expired Food Restriction:")
-    expired_don = db.query(FoodDonation).filter(FoodDonation.status == "Expired").first()
-    assert expired_don is not None, "No expired sample donation found"
-    tier, hours_left = compute_donation_urgency(expired_don)
-    print(f"  • Expired Donation: '{expired_don.food_name}' (Hours Left: {hours_left} hrs, Tier: {tier})")
-    assert hours_left <= 0, "Expired donation hours calculation error"
-    print("  --> PASS: Expired food safely identified and prevented from distribution.")
+    # 6. Food Safety Rule: Automatic Expiry Detection, Status Persistence & Lockout
+    print(f"\n[Test 6] Food Safety Automatic Expiry Transition & Preservation:")
+    from app.routes.donations import mark_expired_donations, list_donations, get_my_donations
+    expired_test_don = FoodDonation(
+        donor_id=donors[0].id,
+        food_name="Expired Test Item",
+        category="Cooked Meals",
+        quantity=10.0,
+        quantity_unit="Meals",
+        dietary_type="Vegetarian",
+        prep_time=datetime.datetime.utcnow() - datetime.timedelta(hours=10),
+        consumption_deadline=datetime.datetime.utcnow() - datetime.timedelta(minutes=5),
+        storage_condition="Room Temperature",
+        pickup_location="MIT Canteen Counter 1",
+        status="Available"
+    )
+    db.add(expired_test_don)
+    db.commit()
+    db.refresh(expired_test_don)
+    expired_id = expired_test_don.id
+
+    tier, hours_left = compute_donation_urgency(expired_test_don)
+    print(f"  • Expired Donation: '{expired_test_don.food_name}' (Hours Left: {hours_left} hrs, Tier: {tier})")
+    assert hours_left <= 0 and tier == "Expired", "Expired donation hours calculation error"
+
+    updated_count = mark_expired_donations(db)
+    assert updated_count >= 1, "mark_expired_donations did not transition expired donation"
+    db.refresh(expired_test_don)
+    assert expired_test_don.status == "Expired", "Expired donation status not persisted as Expired"
+    assert expired_test_don.expired_at is not None, "expired_at timestamp not populated"
+
+    # Idempotency check
+    second_run = mark_expired_donations(db)
+    assert second_run == 0, "mark_expired_donations was not idempotent"
+
+    # Available Food excludes expired items; Donor Dashboard preserves them as Expired
+    avail_list = list_donations(only_available=True, current_user=None, db=db)
+    assert all(d.id != expired_id and d.status != "Expired" for d in avail_list), "Expired item leaked into available food"
+    donor_list = get_my_donations(current_user=donors[0], db=db)
+    assert any(d.id == expired_id and d.status == "Expired" for d in donor_list), "Expired item missing from donor history"
+
+    # AI matching must never recommend expired food
+    expired_match = compute_matches_for_donation(expired_test_don, db)
+    assert expired_match.best_match is None and len(expired_match.all_recommendations) == 0, "AI matched an expired donation"
+
+    # Completed/Collected records must stay preserved
+    completed_dons = db.query(FoodDonation).filter(FoodDonation.status.in_(["Completed", "Collected"])).all()
+    assert len(completed_dons) >= 1, "Completed/Collected history was unexpectedly modified"
+
+    # Clean up temporary test record
+    db.delete(expired_test_don)
+    db.commit()
+    print(f"  • Preserved as Expired with expired_at; excluded from Available Food & AI Matching; Completed records: {len(completed_dons)}")
+    print("  --> PASS: Expired food automatically marked Expired, preserved for monitoring, and locked out.")
 
     # 7. In-App Notifications Verification
     print(f"\n[Test 7] In-App Notification Center Audit:")

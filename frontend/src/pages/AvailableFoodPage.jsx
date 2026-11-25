@@ -6,6 +6,8 @@ import { FoodCard } from '../components/FoodCard';
 import { SafetyBanner } from '../components/SafetyBanner';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
+import { isDonationExpired } from '../utils/dateUtils';
+import { useExpiryWatcher } from '../hooks/useExpiryWatcher';
 
 export const AvailableFoodPage = () => {
   const { user, showToast } = useAuth();
@@ -21,8 +23,8 @@ export const AvailableFoodPage = () => {
   const [urgency, setUrgency] = useState('All');
   const [sortBy, setSortBy] = useState('newest'); // 'newest', 'urgency', 'quantity'
 
-  const loadDonations = async () => {
-    setLoading(true);
+  const loadDonations = async (silent = false) => {
+    if (!silent) setLoading(true);
     try {
       const data = await api.getDonations({
         category,
@@ -34,10 +36,10 @@ export const AvailableFoodPage = () => {
         only_available: true,
       });
 
-      // Strictly display food that is currently 'Available' AND unexpired (hours_left > 0) AND has available quantity > 0
+      // Strictly display food that is currently 'Available' AND unexpired AND has available quantity > 0
       const freshAndEdible = (data || []).filter((d) => {
         const isAvail = d.status?.toLowerCase() === 'available';
-        const hasTime = (d.hours_left !== undefined && d.hours_left !== null) ? d.hours_left > 0 : true;
+        const hasTime = !isDonationExpired(d);
         const rem = (d.remaining_quantity !== null && d.remaining_quantity !== undefined) ? d.remaining_quantity : d.quantity;
         const hasQty = rem > 0;
         return isAvail && hasTime && hasQty;
@@ -47,13 +49,15 @@ export const AvailableFoodPage = () => {
     } catch (err) {
       console.error(err);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
   useEffect(() => {
     loadDonations();
   }, [category, dietary, location, urgency]);
+
+  useExpiryWatcher(donations, setDonations, () => loadDonations(true));
 
   const handleSearch = (e) => {
     e.preventDefault();

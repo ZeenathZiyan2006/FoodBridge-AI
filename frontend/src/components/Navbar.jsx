@@ -21,20 +21,18 @@ import { useLanguage } from '../context/LanguageContext';
 import { api } from '../services/api';
 
 export const Navbar = () => {
-  const { user, logout, quickLogin, unreadCount, fetchUnreadCount, toggleDashboardPanel, showToast } = useAuth();
+  const { user, logout, unreadCount, fetchUnreadCount, toggleDashboardPanel } = useAuth();
   const { language, setLanguage, t } = useLanguage();
   const navigate = useNavigate();
   const location = useLocation();
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
-  const [demoDropdownOpen, setDemoDropdownOpen] = useState(false);
   const [langDropdownOpen, setLangDropdownOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [loadingNotifs, setLoadingNotifs] = useState(false);
 
   const notifRef = useRef(null);
-  const demoRef = useRef(null);
   const langRef = useRef(null);
 
   // Close dropdowns on outside click
@@ -42,9 +40,6 @@ export const Navbar = () => {
     const handleClickOutside = (e) => {
       if (notifRef.current && !notifRef.current.contains(e.target)) {
         setNotificationsOpen(false);
-      }
-      if (demoRef.current && !demoRef.current.contains(e.target)) {
-        setDemoDropdownOpen(false);
       }
       if (langRef.current && !langRef.current.contains(e.target)) {
         setLangDropdownOpen(false);
@@ -82,19 +77,6 @@ export const Navbar = () => {
   const handleSignOut = () => {
     logout();
     navigate('/login');
-  };
-
-  const handleQuickSwitch = async (role) => {
-    setDemoDropdownOpen(false);
-    if (user) {
-      showToast('Active session in progress. Direct role switching is prohibited. Please sign out first.', 'error');
-      return;
-    }
-    const res = await quickLogin(role);
-    if (res) {
-      if (role === 'donor') navigate('/donor-dashboard');
-      else if (role === 'receiver') navigate('/receiver-dashboard');
-    }
   };
 
   const getDashboardPath = () => {
@@ -212,56 +194,6 @@ export const Navbar = () => {
                 </div>
               )}
             </div>
-
-            {/* Demo Switcher for guests (Hidden once user is signed in) */}
-            {!user && (
-              <div className="relative" ref={demoRef}>
-                <button
-                  type="button"
-                  onClick={() => setDemoDropdownOpen(!demoDropdownOpen)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-[#E9A23B]/30 bg-[#FEF7EC] text-[#9A6217] text-xs font-heading font-bold hover:bg-[#FDF0D9] transition-all shadow-2xs cursor-pointer"
-                >
-                  <Sparkles className="w-3.5 h-3.5 text-[#E9A23B]" />
-                  <span>Demo Accounts</span>
-                  <ChevronDown className="w-3 h-3 text-[#9A6217]" />
-                </button>
-
-                {demoDropdownOpen && (
-                  <div className="absolute right-0 mt-2 w-76 bg-white rounded-2xl shadow-xl border border-[#123C2D]/10 p-2.5 z-50 animate-fade-in text-xs space-y-1">
-                    <div className="px-3 py-1.5 border-b border-gray-100 font-semibold text-[#718078] uppercase tracking-wider text-[10px]">
-                      Quick Evaluator Persona Switch
-                    </div>
-                    <button
-                      onClick={() => handleQuickSwitch('donor')}
-                      className="w-full text-left p-2.5 rounded-xl hover:bg-[#E8F5ED] flex flex-col gap-0.5 text-[#202B25] transition cursor-pointer"
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="flex items-center gap-1.5 font-heading font-extrabold text-xs text-[#123C2D]">
-                          <Utensils className="w-3.5 h-3.5 text-[#16865B]" />
-                          <span>Food Donor Account</span>
-                        </span>
-                        <span className="text-[10px] bg-[#E8F5ED] text-[#123C2D] px-1.5 py-0.5 rounded font-mono font-bold">MIT Canteen</span>
-                      </div>
-                      <span className="text-[11px] font-mono text-[#718078]">donor.manipal@foodbridge.ai</span>
-                    </button>
-
-                    <button
-                      onClick={() => handleQuickSwitch('receiver')}
-                      className="w-full text-left p-2.5 rounded-xl hover:bg-[#E8F5ED] flex flex-col gap-0.5 text-[#202B25] transition cursor-pointer"
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="flex items-center gap-1.5 font-heading font-extrabold text-xs text-[#16865B]">
-                          <HeartHandshake className="w-3.5 h-3.5 text-[#16865B]" />
-                          <span>Receiver NGO Account</span>
-                        </span>
-                        <span className="text-[10px] bg-teal-50 text-teal-800 px-1.5 py-0.5 rounded font-mono font-bold">Hope Shelter</span>
-                      </div>
-                      <span className="text-[11px] font-mono text-[#718078]">receiver.hope@foodbridge.ai</span>
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
 
             {/* In-app Notifications */}
             {user && (
@@ -484,8 +416,8 @@ export const Navbar = () => {
             </div>
           )}
 
-          {/* Mobile Drawer Account Status / Demo for Guests */}
-          {user ? (
+          {/* Mobile Drawer Account Status */}
+          {user && (
             <div className="p-3 bg-[#E8F5ED] border border-[#16865B]/20 rounded-2xl space-y-1">
               <div className="flex items-center justify-between">
                 <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#123C2D]">
@@ -497,32 +429,6 @@ export const Navbar = () => {
               </div>
               <p className="font-heading font-extrabold text-sm text-[#123C2D] truncate">{user.full_name}</p>
               <p className="text-[11px] font-mono text-[#718078] truncate">{user.email}</p>
-            </div>
-          ) : (
-            <div className="p-3 bg-[#FEF7EC] border border-[#E9A23B]/30 rounded-2xl space-y-2">
-              <p className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#9A6217]">
-                ⚡ Quick Demo Accounts
-              </p>
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  onClick={() => {
-                    handleQuickSwitch('donor');
-                    setMobileMenuOpen(false);
-                  }}
-                  className="py-2 px-2 rounded-xl text-xs font-heading font-bold text-center border bg-white text-[#202B25] border-[#E9A23B]/30 hover:bg-[#E8F5ED] transition cursor-pointer"
-                >
-                  Food Donor
-                </button>
-                <button
-                  onClick={() => {
-                    handleQuickSwitch('receiver');
-                    setMobileMenuOpen(false);
-                  }}
-                  className="py-2 px-2 rounded-xl text-xs font-heading font-bold text-center border bg-white text-[#202B25] border-[#E9A23B]/30 hover:bg-[#E8F5ED] transition cursor-pointer"
-                >
-                  Receiver
-                </button>
-              </div>
             </div>
           )}
 

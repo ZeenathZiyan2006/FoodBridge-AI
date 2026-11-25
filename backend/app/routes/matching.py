@@ -9,6 +9,7 @@ from ..models import FoodDonation, User, ReceiverProfile
 from ..schemas import DonationRecommendationResponse, ReceiverMatchOut
 from ..matching_engine import compute_matches_for_donation, calculate_location_compatibility, calculate_quantity_compatibility, calculate_urgency_score, calculate_preference_compatibility, resolve_location_coordinates, generate_recommendation_reason
 from ..auth import get_current_user
+from .donations import mark_expired_donations
 
 router = APIRouter(prefix="/api/matching", tags=["AI Matching Engine"])
 
@@ -19,6 +20,7 @@ def get_recommendations_for_donation(donation_id: int, db: Session = Depends(get
     for a given food donation and returns ranked receiver matches with
     explainable reasoning.
     """
+    mark_expired_donations(db)
     donation = db.query(FoodDonation).filter(FoodDonation.id == donation_id).first()
     if not donation:
         raise HTTPException(status_code=404, detail="Donation not found.")
@@ -37,6 +39,8 @@ def get_personalized_receiver_matches(
     """
     if current_user.role not in ["receiver", "admin"]:
         raise HTTPException(status_code=403, detail="Available only to receivers or admin.")
+
+    mark_expired_donations(db)
 
     profile = current_user.receiver_profile
     rec_capacity = profile.required_capacity_meals if profile and profile.required_capacity_meals else 40

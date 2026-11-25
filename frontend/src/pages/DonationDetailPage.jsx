@@ -28,6 +28,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { StatusBadge } from '../components/StatusBadge';
 import { LifecycleTracker } from '../components/LifecycleTracker';
 import { SafetyBanner } from '../components/SafetyBanner';
+import { parseUtcDate, isDonationExpired, getRemainingHours, formatRemainingTime } from '../utils/dateUtils';
 
 export const DonationDetailPage = () => {
   const { id } = useParams();
@@ -45,6 +46,7 @@ export const DonationDetailPage = () => {
   const [requestMsg, setRequestMsg] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [broadcastingAlert, setBroadcastingAlert] = useState(false);
+  const [, setTick] = useState(0);
 
   const loadDonation = async () => {
     setLoading(true);
@@ -67,6 +69,24 @@ export const DonationDetailPage = () => {
   useEffect(() => {
     loadDonation();
   }, [id]);
+
+  // Automatically transition UI to Expired if the viewed food item reaches its deadline
+  useEffect(() => {
+    if (!donation || ['Completed', 'Collected', 'Cancelled', 'Expired'].includes(donation.status)) {
+      return;
+    }
+    const checkExpiry = async () => {
+      if (isDonationExpired(donation)) {
+        setRequestModalOpen(false);
+        showToast('This food listing has expired and is no longer available for collection.', 'info');
+        await loadDonation();
+      } else {
+        setTick((t) => (t + 1) % 1000000);
+      }
+    };
+    const interval = setInterval(checkExpiry, 5000);
+    return () => clearInterval(interval);
+  }, [donation]);
 
   const handleBroadcastAlert = async () => {
     setBroadcastingAlert(true);
@@ -146,7 +166,8 @@ export const DonationDetailPage = () => {
     );
   }
 
-  const isExpired = donation.status === 'Expired' || donation.hours_left <= 0;
+  const isExpired = isDonationExpired(donation);
+  const remainingHours = getRemainingHours(donation);
   const remainingQty = (donation.remaining_quantity !== null && donation.remaining_quantity !== undefined)
     ? donation.remaining_quantity
     : donation.quantity;
@@ -248,13 +269,13 @@ export const DonationDetailPage = () => {
               <div>
                 <span className="text-[#718078] block text-[10px] uppercase font-heading font-bold tracking-wider">Preparation Time</span>
                 <span className="font-medium text-[#202B25]">
-                  {new Date(donation.prep_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'short' })}
+                  {parseUtcDate(donation.prep_time)?.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'short' })}
                 </span>
               </div>
               <div>
                 <span className="text-[#718078] block text-[10px] uppercase font-heading font-bold tracking-wider">Consumption Deadline</span>
-                <span className={`font-heading font-bold ${donation.hours_left <= 3 ? 'text-[#9A6217]' : 'text-[#202B25]'}`}>
-                  {donation.hours_left ? `${donation.hours_left} hrs remaining` : 'Expired'}
+                <span className={`font-heading font-bold ${remainingHours <= 3 ? 'text-[#9A6217]' : 'text-[#202B25]'}`}>
+                  {formatRemainingTime(donation)}
                 </span>
               </div>
               <div className="col-span-2">
@@ -302,7 +323,7 @@ export const DonationDetailPage = () => {
           {/* Action Buttons */}
           <div className="space-y-3 pt-2">
             {/* Urgent Proximity Notification Trigger for Donors */}
-            {user?.role === 'donor' && donation.status === 'Available' && (
+            {user?.role === 'donor' && donation.status === 'Available' && !isExpired && (
               <button
                 type="button"
                 onClick={handleBroadcastAlert}
@@ -332,13 +353,15 @@ export const DonationDetailPage = () => {
               </span>
             </button>
 
-            <Link
-              to={`/matching?donationId=${donation.id}`}
-              className="w-full py-3 px-4 rounded-full bg-white hover:bg-[#F8FAF7] text-[#123C2D] font-heading font-bold text-xs border border-[#123C2D]/15 transition-all flex items-center justify-center gap-2"
-            >
-              <Sparkles className="w-3.5 h-3.5 text-[#E9A23B]" />
-              <span>Run AI Matching For This Batch</span>
-            </Link>
+            {!isExpired && (
+              <Link
+                to={`/matching?donationId=${donation.id}`}
+                className="w-full py-3 px-4 rounded-full bg-white hover:bg-[#F8FAF7] text-[#123C2D] font-heading font-bold text-xs border border-[#123C2D]/15 transition-all flex items-center justify-center gap-2"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-[#E9A23B]" />
+                <span>Run AI Matching For This Batch</span>
+              </Link>
+            )}
 
             {/* Display Positive Impact Created by This Donation */}
             <div className="p-4 bg-gradient-to-br from-[#E8F5ED] to-white rounded-2xl border border-[#16865B]/20 space-y-2 mt-2">
